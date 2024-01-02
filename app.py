@@ -1,4 +1,3 @@
-import entorno
 import polars as pl
 from datetime import date, time, datetime, timedelta
 import pytz
@@ -315,7 +314,7 @@ mes_sel = fecha_sel.month
 encabezado = html.Div(
     dbc.Row([
         dbc.Col(
-            html.Img(src='./assets/cup-logo-1.svg', style={'width': '140%', 'height': '140%'}),
+            html.Img(src='/assets/cup-logo-1.svg', style={'width': '140%', 'height': '140%'}),
             width=2,
         ),
         dbc.Col(
