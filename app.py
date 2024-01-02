@@ -1101,6 +1101,7 @@ parametros_iniciales = {
 #### Layout
 
 app = DashProxy(__name__, transforms=[MultiplexerTransform()], external_stylesheets=[dbc.themes.CERULEAN])
+server = app.server
 
 app.config.suppress_callback_exceptions = True
 
@@ -1563,5 +1564,5 @@ def aplica_cambios(click, param, direc, comuna, fecha, hr_ini, hr_fin, hr_ins, c
 
 # ejecución de la aplicación
 if __name__ == '__main__':
-    app.run_server(debug=True, port=8050)
+    app.run_server(debug=False, port=8050)
 
