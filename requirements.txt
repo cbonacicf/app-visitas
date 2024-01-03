@@ -16,6 +16,7 @@ DateTime==5.4
 EditorConfig==0.12.3
 Flask==2.3.3
 Flask-Caching==2.0.2
+gunicorn
 idna==3.6
 importlib-metadata==7.0.0
 itsdangerous==2.1.2
