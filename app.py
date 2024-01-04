@@ -1,4 +1,5 @@
 import polars as pl
+import pyarrow
 from datetime import date, time, datetime, timedelta
 import pytz
 import os
