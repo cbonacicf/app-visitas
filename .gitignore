@@ -1,5 +1,6 @@
 entorno.py
 .venv
 __pycache__
- .DS_Store
+.DS_Store
+.env
 requirements.txt.bak.txt
