@@ -26,8 +26,8 @@ usuario = 0
 ### Lectura de datos
 # datos de visitas programadas y propuestas
 
-repo_programadas = 'programadas.parquet'
-repo_propuestas = 'propuestas.parquet'
+repo_programadas = './data/programadas.parquet'
+repo_propuestas = './data/propuestas.parquet'
 
 def lectura(repositorio):
     df = pl.read_parquet(repositorio)
@@ -39,13 +39,13 @@ propuestas, schema_propuesta = lectura(repo_propuestas)
 # crea diccionario rbd->nombre y rbd->codigo_comuna
 
 colegios = dict(
-    pl.read_parquet('colegios.parquet')
+    pl.read_parquet('./data/colegios.parquet')
     .select(['rbd', 'nombre'])
     .rows()
 )
 
 colegios_comuna = dict(
-    pl.read_parquet('colegios.parquet')
+    pl.read_parquet('./data/colegios.parquet')
     .select(['rbd', 'cod_com'])
     .rows()
 )
@@ -53,7 +53,7 @@ colegios_comuna = dict(
 # crea listado con los feriados y fines de semana
 
 feriados = (
-    pl.read_parquet('feriados2024.parquet')
+    pl.read_parquet('./data/feriados2024.parquet')
     .to_series()
     .to_list()
 )
@@ -61,7 +61,7 @@ feriados = (
 # crea diccionario codigo->comuna
 
 comunas = dict(
-    pl.read_parquet('comunas.parquet')
+    pl.read_parquet('./data/comunas.parquet')
     .sort('comuna')
     .rows()
 )
@@ -69,7 +69,7 @@ comunas = dict(
 # crea diccionario con la división horaria de la jornada
 
 horas_15 = dict(
-    pl.read_parquet('div_horas.parquet')
+    pl.read_parquet('./data/div_horas.parquet')
     .rows()
 )
 
