@@ -108,6 +108,19 @@ def crea_id(variable_entorno):
     os.environ[variable_entorno] = str(id_nuevo)
     return id_nuevo
 
+
+def crea_id2(tipo):
+    file = f'./data/{tipo}.json'
+
+    with open(file, 'r') as f:
+        id_nuevo = json.load(f)[tipo] + 1
+
+    with open(file, 'w') as w:
+        json.dump({tipo: id_nuevo}, w)
+
+    return id_nuevo
+
+
 # función que crea las opciones de visualización de meses
 
 lista_meses = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic']
