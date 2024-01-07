@@ -243,7 +243,8 @@ def exporta_programada(datos, mes):
 
 def nueva_programada(dic):
     df = pl.read_parquet(repo_programadas)
-    dic = {'id': crea_id('ID_PROGRAMADA')} | dic
+#    dic = {'id': crea_id('ID_PROGRAMADA')} | dic
+    dic = {'id': crea_id2('programadas')} | dic
     df = pl.concat([df, pl.from_dict(dic, schema=schema_programada)], how='diagonal')
     df.write_parquet(repo_programadas)
     return df.to_dicts()
@@ -252,7 +253,8 @@ def nueva_programada(dic):
 def modifica_programada(dic, consume=False, id=None):
     df = pl.read_parquet(repo_programadas).filter(pl.col('id') != dic['id'])
     if id == None:
-        dic['id'] = crea_id('ID_PROGRAMADA')
+#        dic['id'] = crea_id('ID_PROGRAMADA')
+        dic['id'] = crea_id2('programadas')
     df = pl.concat([df, pl.from_dict(dic, schema=schema_programada)], how='diagonal')
     df.write_parquet(repo_programadas)
     if consume:
@@ -299,7 +301,8 @@ def exporta_propuesta(datos):
 
 def nueva_propuesta(dic):
     df = pl.read_parquet(repo_propuestas)
-    dic = {'id': crea_id('ID_PROPUESTA')} | dic
+#    dic = {'id': crea_id('ID_PROPUESTA')} | dic
+    dic = {'id': crea_id2('propuestas')} | dic
     df = pl.concat([df, pl.from_dict(dic, schema=schema_propuesta)])
     df.write_parquet(repo_propuestas)
     return df.to_dicts()
