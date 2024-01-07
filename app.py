@@ -1481,7 +1481,7 @@ def modifica_colegio_programado(click, datos, filas, param):
         if filas:
             id = filas[0]['id']
             dic_original = (
-                pl.read_parquet('programadas.parquet')
+                pl.read_parquet('./data/programadas.parquet')
                 .filter(pl.col('id') == id)
                 .to_dicts()
             )[0]
