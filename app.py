@@ -1546,7 +1546,7 @@ def aplica_cambios(click, param, direc, comuna, fecha, hr_ini, hr_fin, hr_ins, c
     else:
         id_visita = param['id_modifica']
         dic_original = (
-            pl.read_parquet('programadas.parquet')
+            pl.read_parquet('./data/programadas.parquet')
             .filter(pl.col('id') == id_visita)
             .to_dicts()
         )[0]
