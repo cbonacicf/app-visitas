@@ -1,5 +1,4 @@
 polars
-pandas
 pyarrow
 pray
 pytz
@@ -8,4 +7,4 @@ dash
 dash_ag_grid
 dash_bootstrap_components
 dash_extensions
-gunicorn
+XlsxWriter

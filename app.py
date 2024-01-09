@@ -1,5 +1,4 @@
 import polars as pl
-import pandas
 import pyarrow
 from datetime import date, time, datetime, timedelta
 import pytz
@@ -181,13 +180,37 @@ actualiza = {
 schema_programada_lectura = schema_programada.copy()
 schema_programada_lectura.update(actualiza)
 
-variables_programadas = ['id', 'fecha', 'rbd', 'nombre', 'id_organizador', 'organizador', 'estatus']
+orden = ['id', 'fecha', 'rbd', 'nombre', 'id_organizador', 'organizador', 'estatus']
 
+map_orden_todas = {
+    'id': 'ID',
+    'fecha': 'Fecha',
+    'rbd': 'RBD',
+    'nombre': 'Colegio',
+    'id_organizador': 'Código',
+    'organizador': 'Universidad',
+    'direccion': 'Dirección',
+    'id_comuna': 'Comuna',
+    'hora_ini': 'Inicio',
+    'hora_fin': 'Término',
+    'hora_ins': 'Instalación',
+    'contacto': 'Contacto',
+    'tel_contacto': 'Teléfono contacto',
+    'mail_contacto': 'Correo contacto',
+    'cargo_contacto': 'Cargo contacto',
+    'orientador': 'Orientador',
+    'tel_orientador': 'Teléfono orientador',
+    'mail_orientador': 'Correo orientador',
+    'estatus': 'Estatus',
+    'observaciones': 'Observaciones',
+}
+
+map_orden = {k: map_orden_todas[k] for k in orden}
 
 def programadas_vista(datos, mes=0):
     df = (
         pl.DataFrame(datos, schema=schema_programada_lectura)
-        .select(variables_programadas)
+        .select(orden)
         .with_columns(
             pl.col('fecha').str.strptime(pl.Date, '%Y-%m-%d'),
         )
@@ -201,7 +224,7 @@ def programadas_vista(datos, mes=0):
 def programadas_fecha(datos, fecha):
     return (
         pl.DataFrame(datos, schema=schema_programada_lectura)
-        .select(variables_programadas)
+        .select(orden)
         .filter(pl.col('fecha').str.strptime(pl.Date, '%Y-%m-%d') == fecha)
         .with_columns([
             pl.col('fecha').str.strptime(pl.Date, '%Y-%m-%d'),
@@ -214,7 +237,7 @@ def programadas_fecha(datos, fecha):
 def programadas_usuario(datos, usuario, hoy):
     return (
         pl.DataFrame(datos, schema=schema_programada_lectura)
-        .select(variables_programadas)
+        .select(orden)
         .filter((pl.col('id_organizador') == usuario) & (pl.col('fecha').str.strptime(pl.Date, '%Y-%m-%d') >= hoy))
         .with_columns([
             pl.col('fecha').str.strptime(pl.Date, '%Y-%m-%d'),
@@ -227,18 +250,23 @@ def programadas_usuario(datos, usuario, hoy):
     )
 
 
-def exporta_programada(datos, mes):
+def exporta_programada(datos, mes, usuario):
+    output = io.BytesIO()
     df = (
         pl.DataFrame(datos, schema=schema_programada_lectura)
-        .select(variables_programadas)
-        .with_columns(
+        .with_columns([
             pl.col('fecha').str.strptime(pl.Date, '%Y-%m-%d'),
-        )
+            pl.col('id_comuna').replace(comunas),
+        ])
+        .select({0: orden}.get(usuario, list(map_orden_todas.keys())))
+        .rename({0: map_orden}.get(usuario, map_orden_todas))
     )
     if mes != 0:
-        df = df.filter(pl.col('fecha').dt.month() == mes)
+        df = df.filter(pl.col('Fecha').dt.month() == mes)
+    df.sort(['Fecha', 'ID']).write_excel(workbook=output, autofilter=False)
 
-    return df.sort(['fecha', 'id']).to_pandas()
+    return output.getvalue()
+
 
 # funciones que agregan, modifican y eliminan una programada
 
@@ -290,14 +318,15 @@ def propuesta_vista(datos, usuario=None):
 
 
 def exporta_propuesta(datos):
-    return (
+    output = io.BytesIO()
+    (
         pl.DataFrame(datos, schema=schema_propuesta)
         .sort(['id_organizador'])
         .select(['rbd', 'nombre', 'organizador'])
-        .rename({'organizador': 'proponente'})
-        .to_pandas()
-    )
-    
+        .rename({'rbd': 'RBD', 'nombre': 'Colegio', 'organizador': 'Proponente'})
+    ).write_excel(workbook=output, autofilter=False)
+    return output.getvalue()
+
 # funciones que agregan y eliminan una propuesta
 
 def nueva_propuesta(dic):
@@ -1409,9 +1438,8 @@ def arega_propuesta(click, param, rbd, nombre):
     prevent_initial_call=True,
 )
 def exporta_visitas_excel(click, datos, param):
-    df = exporta_programada(datos, param['mes'])
-
-    return dcc.send_data_frame(df.to_excel, 'visitas.xlsx', sheet_name='Sheet1', index=False)
+    df = exporta_programada(datos, param['mes'], param['user'])
+    return dcc.send_bytes(df, 'visitas.xlsx')
 
 
 # exporta colegios propuestos a excel
@@ -1423,8 +1451,7 @@ def exporta_visitas_excel(click, datos, param):
 )
 def exporta_propuestas_excel(click, datos):
     df = exporta_propuesta(datos)
-    return dcc.send_data_frame(df.to_excel, 'propuestas.xlsx', sheet_name='Sheet1', index=False)
-
+    return dcc.send_bytes(df, 'propuestas.xlsx')
 
 # elimina selección de listado de colegios propuestos
 @app.callback(
