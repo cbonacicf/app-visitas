@@ -490,7 +490,7 @@ def vista_propuestos_gral(datos):
             columnSize='sizeToFit',
             getRowStyle=getRowStyle,
             style={'height': '800px', 'width': '1000px'},
-            resetColumnState=True,
+            updateColumnState=True,
         )
     )
 
@@ -554,7 +554,7 @@ def grid_programadas(datos, mes):
         columnSize='sizeToFit',
         getRowStyle=getRowStyle,
         style={'height': '800px', 'width': 1250},
-        resetColumnState=True,
+        updateColumnState=True,
     )
 
 # botón que exporta selección a excel
@@ -648,7 +648,7 @@ def viz_colegios_prop(datos, usr):
         },
         getRowStyle=getRowStyle,
         style={'height': '600px', 'width': '650px'},
-        resetColumnState=True,
+        updateColumnState=True,
     )
 
 # elementos: selector de colegio, botones agregar y eliminar, listado de colegios seleccionados -> form_list_colegios
@@ -741,7 +741,7 @@ def fecha_visita():
                 style={'width': '1030px', 'height': None, 'margin': 5},
                 persistence=True,
                 persistence_type='memory',
-                resetColumnState=True,
+                updateColumnState=True,
             ),
         ], style={'width': '80%', 'display': 'inline-block', 'vertical-align': 'top'})
     ])
@@ -885,7 +885,7 @@ def viz_modifica(datos, usuario):
                 style={'height': '600px', 'width': '850px', 'height': None, 'margin': 5},
                 persistence=True,
                 persistence_type='memory',
-                resetColumnState=True,
+                updateColumnState=True,
             ),
         ], style={'width': '80%', 'display': 'inline-block', 'vertical-align': 'top'})
     ])
@@ -979,7 +979,7 @@ def mod_fecha(datos, fecha):
                         'rowSelection': 'single',
                     },
                     style={'width': '1030px', 'height': None, 'margin': 5},
-                    resetColumnState=True,
+                    updateColumnState=True,
                 ),
             ], width=7, align='start')
         ])
