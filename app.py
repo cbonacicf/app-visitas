@@ -3,6 +3,7 @@ import pyarrow
 from datetime import date, time, datetime, timedelta
 import pytz
 import os
+import io
 import json
 
 import dash
@@ -1610,5 +1611,5 @@ def aplica_cambios(click, param, direc, comuna, fecha, hr_ini, hr_fin, hr_ins, c
 
 # ejecución de la aplicación
 if __name__ == '__main__':
-    app.run_server(debug=False) #, port=8050)
+    app.run_server(debug=False) #True, port=8050)
 
