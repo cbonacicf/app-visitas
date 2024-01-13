@@ -5,7 +5,7 @@ import pytz
 import os
 import io
 import json
-import sqalchemy
+import sqlalchemy
 
 import dash
 from dash import dcc

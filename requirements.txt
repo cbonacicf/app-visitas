@@ -8,4 +8,4 @@ dash_ag_grid
 dash_bootstrap_components
 dash_extensions
 XlsxWriter
-sqalchemy
+sqlalchemy
