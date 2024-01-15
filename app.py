@@ -1,11 +1,13 @@
 import polars as pl
-import pyarrow
 from datetime import date, time, datetime, timedelta
 import pytz
 import os
 import io
 import json
-import sqlalchemy
+
+from sqlalchemy import create_engine
+from sqlalchemy.orm import Session
+from sqlalchemy.ext.automap import automap_base
 
 import dash
 from dash import dcc
@@ -24,19 +26,49 @@ fecha_final = date(2024, 11, 30)
 
 usuario = 0
 
+### Conexión
+# parámetros de conexión
+
+user_conn = os.environ['PGUSER']
+password_conn = os.environ['PGPASSWORD']
+server_conn = os.environ['PGHOST']
+port_conn = os.environ['PGPORT']
+database_conn = os.environ['PGDATABASE']
+
+string_conn = f"postgresql://{user_conn}:{password_conn}@{server_conn}:{port_conn}/{database_conn}"
+
+engine = create_engine(string_conn)
+
+# creación de clases de las bases de datos
+
+Base = automap_base()
+Base.prepare(autoload_with=engine)
+
+Propuesta = Base.classes.propuestas
+Programada = Base.classes.programadas
 
 ### Lectura de datos
 # datos de visitas programadas y propuestas
 
-repo_programadas = './data/programadas.parquet'
-repo_propuestas = './data/propuestas.parquet'
+repo_programadas = './data/programadas2.parquet'
+repo_propuestas = './data/propuestas2.parquet'
 
 def lectura(repositorio):
     df = pl.read_parquet(repositorio)
     return df.to_dicts(), df.schema
 
-programadas, schema_programada = lectura(repo_programadas)
-propuestas, schema_propuesta = lectura(repo_propuestas)
+
+def lectura2(db):
+    df = pl.read_database(
+        query = f'SELECT * FROM {db}',
+        connection = engine,
+    )
+    return df.to_dicts(), df.schema
+    
+
+programadas, schema_programada = lectura2('programadas')
+propuestas, schema_propuesta = lectura2('propuestas')
+
 
 # crea diccionario rbd->nombre y rbd->codigo_comuna
 
@@ -75,7 +107,6 @@ horas_15 = dict(
     .rows()
 )
 
-
 # universidades que participan en las visitas
 
 universidades = {
@@ -98,6 +129,7 @@ universidades = {
 usuarios = {0: 'Visita'} | universidades
 universidades_inv = {v: k for k, v in universidades.items()}
 
+
 ### Funciones
 # registra la fecha actual (instantánea) en Santiago
 
@@ -105,14 +137,8 @@ ahora = lambda: datetime.now(pytz.timezone('America/Santiago')).date()
 
 # función que crea id
 
-def crea_id(variable_entorno):
-    id_nuevo = int(os.environ[variable_entorno]) + 1
-    os.environ[variable_entorno] = str(id_nuevo)
-    return id_nuevo
-
-
 def crea_id2(tipo):
-    file = f'./data/{tipo}.json'
+    file = f'{tipo}.json'
 
     with open(file, 'r') as f:
         id_nuevo = json.load(f)[tipo] + 1
@@ -121,7 +147,6 @@ def crea_id2(tipo):
         json.dump({tipo: id_nuevo}, w)
 
     return id_nuevo
-
 
 # función que crea las opciones de visualización de meses
 
@@ -132,7 +157,6 @@ def opciones_meses():
     j = fecha_final.month
     map_meses = {0: 'Todos'} | {k: v for k, v in enumerate(lista_meses[i-1:j], start=i) if k >= i and k <= j}
     return opciones(map_meses)
-
 
 # función que cambia el nombre de la pestaña de edición
 
@@ -170,7 +194,7 @@ def opciones(dic):
 
 
 #### Programadas
-# función que crea datos de visualización (insumo: lista de diccionarios)
+# función que crea datos de visualización (insumo: lista de diccionarios) (no lee datos externos)
 
 actualiza = {
     'fecha': pl.Utf8,
@@ -182,27 +206,27 @@ actualiza = {
 schema_programada_lectura = schema_programada.copy()
 schema_programada_lectura.update(actualiza)
 
-orden = ['id', 'fecha', 'rbd', 'nombre', 'id_organizador', 'organizador', 'estatus']
+orden = ['prog_id', 'fecha', 'rbd', 'nombre', 'organizador_id', 'organizador', 'estatus']
 
 map_orden_todas = {
-    'id': 'ID',
+    'prog_id': 'ID',
     'fecha': 'Fecha',
     'rbd': 'RBD',
     'nombre': 'Colegio',
-    'id_organizador': 'Código',
+    'organizador_id': 'Código',
     'organizador': 'Universidad',
     'direccion': 'Dirección',
-    'id_comuna': 'Comuna',
+    'comuna_id': 'Comuna',
     'hora_ini': 'Inicio',
     'hora_fin': 'Término',
     'hora_ins': 'Instalación',
     'contacto': 'Contacto',
-    'tel_contacto': 'Teléfono contacto',
-    'mail_contacto': 'Correo contacto',
-    'cargo_contacto': 'Cargo contacto',
+    'contacto_tel': 'Teléfono contacto',
+    'contacto_mail': 'Correo contacto',
+    'contacto_cargo': 'Cargo contacto',
     'orientador': 'Orientador',
-    'tel_orientador': 'Teléfono orientador',
-    'mail_orientador': 'Correo orientador',
+    'orientador_tel': 'Teléfono orientador',
+    'orientador_mail': 'Correo orientador',
     'estatus': 'Estatus',
     'observaciones': 'Observaciones',
 }
@@ -220,7 +244,7 @@ def programadas_vista(datos, mes=0):
     if mes != 0:
         df = df.filter(pl.col('fecha').dt.month() == mes)
 
-    return df.sort(['fecha', 'id']).to_dicts()
+    return df.sort(['fecha', 'prog_id']).to_dicts()
 
 
 def programadas_fecha(datos, fecha):
@@ -232,7 +256,7 @@ def programadas_fecha(datos, fecha):
             pl.col('fecha').str.strptime(pl.Date, '%Y-%m-%d'),
             pl.arange(1, pl.count()+1).alias('orden'),
         ])
-        .sort(['fecha', 'id'])
+        .sort(['fecha', 'prog_id'])
     ).to_dicts()
 
 
@@ -240,11 +264,11 @@ def programadas_usuario(datos, usuario, hoy):
     return (
         pl.DataFrame(datos, schema=schema_programada_lectura)
         .select(orden)
-        .filter((pl.col('id_organizador') == usuario) & (pl.col('fecha').str.strptime(pl.Date, '%Y-%m-%d') >= hoy))
+        .filter((pl.col('organizador_id') == usuario) & (pl.col('fecha').str.strptime(pl.Date, '%Y-%m-%d') >= hoy))
         .with_columns([
             pl.col('fecha').str.strptime(pl.Date, '%Y-%m-%d'),
         ])
-        .sort(['fecha', 'id'])
+        .sort(['fecha', 'prog_id'])
         .with_columns([
             pl.arange(1, pl.count()+1).alias('orden'),
         ])
@@ -258,7 +282,7 @@ def exporta_programada(datos, mes, usuario):
         pl.DataFrame(datos, schema=schema_programada_lectura)
         .with_columns([
             pl.col('fecha').str.strptime(pl.Date, '%Y-%m-%d'),
-            pl.col('id_comuna').replace(comunas),
+            pl.col('comuna_id').replace(comunas),
         ])
         .select({0: orden}.get(usuario, list(map_orden_todas.keys())))
         .rename({0: map_orden}.get(usuario, map_orden_todas))
@@ -270,11 +294,10 @@ def exporta_programada(datos, mes, usuario):
     return output.getvalue()
 
 
-# funciones que agregan, modifican y eliminan una programada
+# funciones que agregan, modifican y eliminan una programada (toman datos externos)
 
 def nueva_programada(dic):
     df = pl.read_parquet(repo_programadas)
-#    dic = {'id': crea_id('ID_PROGRAMADA')} | dic
     dic = {'id': crea_id2('programadas')} | dic
     df = pl.concat([df, pl.from_dict(dic, schema=schema_programada)], how='diagonal')
     df.write_parquet(repo_programadas)
@@ -284,7 +307,6 @@ def nueva_programada(dic):
 def modifica_programada(dic, consume=False, id=None):
     df = pl.read_parquet(repo_programadas).filter(pl.col('id') != dic['id'])
     if id == None:
-#        dic['id'] = crea_id('ID_PROGRAMADA')
         dic['id'] = crea_id2('programadas')
     df = pl.concat([df, pl.from_dict(dic, schema=schema_programada)], how='diagonal')
     df.write_parquet(repo_programadas)
@@ -308,13 +330,13 @@ def propuesta_vista(datos, usuario=None):
     if usuario:
         return (
             pl.DataFrame(datos, schema=schema_propuesta)
-            .filter(pl.col('id_organizador') == usuario)
-            .select(['id', 'id_organizador', 'rbd', 'nombre']).to_dicts()
+            .filter(pl.col('organizador_id') == usuario)
+            .select(['prop_id', 'organizador_id', 'rbd', 'nombre']).to_dicts()
         )
     else:
         return (
             pl.DataFrame(datos, schema=schema_propuesta)
-            .sort(['id_organizador'])
+            .sort(['organizador_id'])
             .select(['rbd', 'nombre', 'organizador']).to_dicts()
         )
 
@@ -323,17 +345,17 @@ def exporta_propuesta(datos):
     output = io.BytesIO()
     (
         pl.DataFrame(datos, schema=schema_propuesta)
-        .sort(['id_organizador'])
+        .sort(['organizador_id'])
         .select(['rbd', 'nombre', 'organizador'])
         .rename({'rbd': 'RBD', 'nombre': 'Colegio', 'organizador': 'Proponente'})
     ).write_excel(workbook=output, autofilter=False)
     return output.getvalue()
 
 # funciones que agregan y eliminan una propuesta
+# (sección a eliminar)
 
 def nueva_propuesta(dic):
     df = pl.read_parquet(repo_propuestas)
-#    dic = {'id': crea_id('ID_PROPUESTA')} | dic
     dic = {'id': crea_id2('propuestas')} | dic
     df = pl.concat([df, pl.from_dict(dic, schema=schema_propuesta)])
     df.write_parquet(repo_propuestas)
@@ -344,6 +366,34 @@ def elimina_propuesta(id):
     df = pl.read_parquet(repo_propuestas).filter(pl.col('id') != id)
     df.write_parquet(repo_propuestas)
     return df.to_dicts()
+
+# funciones que agregan y eliminan una propuesta (de base PostgreSQL)
+# (nuevas funciones)
+
+def nueva_propuesta2(dic):
+    propuesta = Propuesta(
+        organizador_id=dic['organizador_id'],
+        organizador=dic['organizador'],
+        rbd=dic['rbd'],
+        nombre=dic['nombre'],
+    )
+
+    session = Session(engine)
+    session.add(propuesta)
+    session.commit()
+    session.close()
+
+    return lectura2('propuestas')[0]
+
+
+def elimina_propuesta2(id):
+    session = Session(engine)
+    elimina = session.query(Propuesta).filter(Propuesta.prop_id == id).first()
+    session.delete(elimina)
+    session.commit()
+    session.close()
+
+    return lectura2('propuestas')[0]
 
 
 ### Construcción de la aplicación
@@ -358,13 +408,13 @@ fecha_sel = max(ahora(), fecha_inicial)
 mes_sel = fecha_sel.month
 
 
-#### Encabezado
+# #### Encabezado
 # encabezado
 
 encabezado = html.Div(
     dbc.Row([
         dbc.Col(
-            html.Img(src='/assets/cup-logo-1.svg', style={'width': '140%', 'height': '140%'}),
+            html.Img(src='./assets/cup-logo-1.svg', style={'width': '140%', 'height': '140%'}),
             width=2,
         ),
         dbc.Col(
@@ -458,7 +508,7 @@ def tabs_visual(tab):
                 selected_style=tab_selected_style,
             ),
         ], style=custom_tabs_container),
-        html.Div(id='contenido-visual'), # <- recibe el contenido de las pestañas de visualización
+        html.Div(id='contenido-visual'),
     ])
 
 
@@ -490,7 +540,7 @@ def vista_propuestos_gral(datos):
             },
             columnSize='sizeToFit',
             getRowStyle=getRowStyle,
-            style={'height': '800px', 'width': '1000px'},
+            style={'height': '800px', 'width': '1000px'}
         )
     )
 
@@ -553,7 +603,7 @@ def grid_programadas(datos, mes):
         },
         columnSize='sizeToFit',
         getRowStyle=getRowStyle,
-        style={'height': '800px', 'width': 1250},
+        style={'height': '800px', 'width': 1250}
     )
 
 # botón que exporta selección a excel
@@ -563,11 +613,6 @@ btn_exp_visitas = dbc.Row([
     dcc.Download(id='exporta-visitas-archivo'),
 ], justify='end',)
 
-btn_exp_ejemplo = dbc.Row([
-    html.Button('Exporta ejemplo', id='exporta-ejemplo', className='btn btn-outline-primary',
-                style={'width': '15%', 'marginRight': 10, 'marginTop': 15, 'padding': '6px 20px'}),
-    dcc.Download(id='exporta-ejemplo-archivo'),
-], justify='end',)
 
 def form_visualiza(datos, mes):
     return dbc.Form([
@@ -646,7 +691,7 @@ def viz_colegios_prop(datos, usr):
             'rowSelection': 'single',
         },
         getRowStyle=getRowStyle,
-        style={'height': '600px', 'width': '650px'},
+        style={'height': '600px', 'width': '650px'}
     )
 
 # elementos: selector de colegio, botones agregar y eliminar, listado de colegios seleccionados -> form_list_colegios
@@ -942,7 +987,7 @@ def mod_direccion(direccion, comuna):
     ])
 
 
-# fecha
+# fecha: cambiar la fecha debiera ser equivalente a crear una nueva visita
 def mod_fecha(datos, fecha):
     return html.Div(
         dbc.Row([
@@ -1066,14 +1111,14 @@ def form_modifica_visita(datos, original):
         linea,
         mod_estatus(original['estatus']),
         linea,
-        mod_direccion(original['direccion'], original['id_comuna']),
+        mod_direccion(original['direccion'], original['comuna_id']),
         linea,
         mod_fecha(datos, original['fecha']),
         linea,
         mod_horario(original['hora_ini'], original['hora_fin'], original['hora_ins']),
         linea,
-        mod_contacto(original['contacto'], original['tel_contacto'], original['mail_contacto'], original['cargo_contacto'],
-                     original['orientador'], original['tel_orientador'], original['mail_orientador']),
+        mod_contacto(original['contacto'], original['contacto_tel'], original['contacto_mail'], original['contacto_cargo'],
+                     original['orientador'], original['orientador_tel'], original['orientador_mail']),
         linea,
         mod_observaciones(original['observaciones']),
         linea,
@@ -1151,7 +1196,6 @@ parametros_iniciales = {
 #### Layout
 
 app = DashProxy(__name__, transforms=[MultiplexerTransform()], external_stylesheets=[dbc.themes.CERULEAN])
-server = app.server
 
 app.config.suppress_callback_exceptions = True
 
@@ -1212,7 +1256,7 @@ def ingreso_edicion(click, universidad, pw, param):
             return dash.no_update, dash.no_update, dash.no_update, None, dash.no_update
 
 
-# TAB: despliegue de las opciones de visualización
+# 3.1 despliegue de las opciones de visualización
 @app.callback(
     Output('contenido-visual', 'children'),
     Output('parametros', 'data'),
@@ -1224,13 +1268,13 @@ def ingreso_edicion(click, universidad, pw, param):
 def crea_contenido_visualizacion(tab, datos, datos_prop, param):
     if tab == 'tabviz1':
         param['tab_visual'] = tab
-        return html.Div(form_vista_propuestos_gral(datos_prop)), param
+        return html.Div(form_vista_propuestos_gral(datos_prop)), param  # <= ***
     elif tab == 'tabviz2':
         param['tab_visual'] = tab
         return html.Div(form_visualiza(datos, param['mes'])), param
 
 
-# TAB: despliegue de las opciones de edición
+# 3.2 despliegue de las opciones de edición
 @app.callback(
     Output('contenido-edicion', 'children'),
     Output('parametros', 'data'),
@@ -1251,7 +1295,7 @@ def crea_contenido_edicion(tab, datos, datos_prop, param):
         return form_modifica(datos, param['user']), param
 
 
-# BOTON RADIO: modifica la visualización de las visitas programadas
+# RADIO: modifica la visualización de las visitas programadas
 @app.callback(
     Output('parametros', 'data'),
     Output('viz-ferias', 'rowData'),
@@ -1265,7 +1309,7 @@ def mod_visualizacion_mes(mes, datos, param):
     return param, programadas_vista(datos, mes)
 
 
-# SELECTOR: cambio de día
+# cambio de día
 @app.callback(
     Output('ferias-prg', 'rowData'),
     Input('sel-fecha', 'date'),
@@ -1275,7 +1319,7 @@ def ferias_programadas_fecha(fecha, datos):
     return programadas_fecha(datos, datetime.strptime(fecha, '%Y-%m-%d').date())
 
 
-# INPUT: sleccición de RBD y nombre
+# sleccición de RBD y nombre
 @app.callback(
     Output('sel-rbd', 'value'),
     Output('sel-nombre', 'value'),
@@ -1381,23 +1425,23 @@ def agrega_feria(click, param, fecha, rbd, direc, comuna, hr_ini, hr_fin, hr_ins
         dic_datos = {}
         dic_observaciones = {}
 
-        dic_datos['id_organizador'] = param['user']
+        dic_datos['organizador_id'] = param['user']
         dic_datos['organizador'] = universidades[param['user']]
         dic_datos['fecha'] = datetime.strptime(fecha, '%Y-%m-%d')
         dic_datos['rbd'] = rbd
         dic_datos['nombre'] = colegios[rbd]
         dic_datos['direccion'] = direc
-        dic_datos['id_comuna'] = comuna
+        dic_datos['comuna_id'] = comuna
         dic_datos['hora_ini'] = convierte_hora(hr_ini)
         dic_datos['hora_fin'] = convierte_hora(hr_fin)
         dic_datos['hora_ins'] = convierte_hora(hr_ins)
         dic_datos['contacto'] = ct
-        dic_datos['tel_contacto'] = ct_tel
-        dic_datos['mail_contacto'] = ct_mail
-        dic_datos['cargo_contacto'] = ct_cargo
+        dic_datos['contacto_tel'] = ct_tel
+        dic_datos['contacto_mail'] = ct_mail
+        dic_datos['contacto_cargo'] = ct_cargo
         dic_datos['orientador'] = ori
-        dic_datos['tel_orientador'] = ori_tel
-        dic_datos['mail_orientador'] = ori_mail
+        dic_datos['orientador_tel'] = ori_tel
+        dic_datos['orientador_mail'] = ori_mail
         dic_datos['estatus'] = est
         dic_datos['observaciones'] = obs
     
@@ -1421,12 +1465,12 @@ def arega_propuesta(click, param, rbd, nombre):
         raise PreventUpdate
     else:
         dic = {
-            'id_organizador': param['user'],
+            'organizador_id': param['user'],
             'organizador': universidades[param['user']],
             'rbd': rbd,
             'nombre': colegios[rbd],
         }
-        df = nueva_propuesta(dic)
+        df = nueva_propuesta2(dic)
         datos_grid = propuesta_vista(df, usuario=param['user']) # datos para grid
         return df, form_colegios_prop(df, param['user'])
 
@@ -1455,6 +1499,7 @@ def exporta_propuestas_excel(click, datos):
     df = exporta_propuesta(datos)
     return dcc.send_bytes(df, 'propuestas.xlsx')
 
+
 # elimina selección de listado de colegios propuestos
 @app.callback(
     Output('datos-propuestas', 'data'),
@@ -1468,9 +1513,9 @@ def elimina_colegio_propuesto(click, filas):
         raise PreventUpdate
     else:
         if filas:
-            id = filas[0]['id']
-            usuario = filas[0]['id_organizador']
-            df = elimina_propuesta(id)
+            id = filas[0]['prop_id']
+            usuario = filas[0]['organizador_id']
+            df = elimina_propuesta2(id)
             return df, form_colegios_prop(df, usuario)
         else:
             return dash.no_update, dash.no_update,
@@ -1489,8 +1534,8 @@ def elimina_colegio_programado(click, filas):
         raise PreventUpdate
     else:
         if filas:
-            id = filas[0]['id']
-            usuario = filas[0]['id_organizador']
+            id = filas[0]['prog_id']
+            usuario = filas[0]['organizador_id']
             df = elimina_programada(id, consume=True)
             return df, form_modifica(df, usuario)
         else:
@@ -1514,7 +1559,7 @@ def modifica_colegio_programado(click, datos, filas, param):
         if filas:
             id = filas[0]['id']
             dic_original = (
-                pl.read_parquet('./data/programadas.parquet')
+                pl.read_parquet('programadas2.parquet')
                 .filter(pl.col('id') == id)
                 .to_dicts()
             )[0]
@@ -1579,7 +1624,7 @@ def aplica_cambios(click, param, direc, comuna, fecha, hr_ini, hr_fin, hr_ins, c
     else:
         id_visita = param['id_modifica']
         dic_original = (
-            pl.read_parquet('./data/programadas.parquet')
+            pl.read_parquet('programadas.parquet')
             .filter(pl.col('id') == id_visita)
             .to_dicts()
         )[0]
@@ -1589,18 +1634,18 @@ def aplica_cambios(click, param, direc, comuna, fecha, hr_ini, hr_fin, hr_ins, c
             id = None
 
         dic_original['direccion'] = direc
-        dic_original['id_comuna'] = comuna
+        dic_original['comuna_id'] = comuna
         dic_original['fecha'] = nueva_fecha
         dic_original['hora_ini'] = convierte_hora(hr_ini)
         dic_original['hora_fin'] = convierte_hora(hr_fin)
         dic_original['hora_ins'] = convierte_hora(hr_ins)
         dic_original['contacto'] = ct
-        dic_original['tel_contacto'] = ct_tel
-        dic_original['mail_contacto'] = ct_mail
-        dic_original['cargo_contacto'] = ct_cargo
+        dic_original['contacto_tel'] = ct_tel
+        dic_original['contacto_mail'] = ct_mail
+        dic_original['contacto_cargo'] = ct_cargo
         dic_original['orientador'] = ori
-        dic_original['tel_orientador'] = ori_tel
-        dic_original['mail_orientador'] = ori_mail
+        dic_original['orientador_tel'] = ori_tel
+        dic_original['orientador_mail'] = ori_mail
         dic_original['estatus'] = est
         dic_original['observaciones'] = obs
 
@@ -1613,4 +1658,3 @@ def aplica_cambios(click, param, direc, comuna, fecha, hr_ini, hr_fin, hr_ins, c
 # ejecución de la aplicación
 if __name__ == '__main__':
     app.run_server(debug=False) #True, port=8050)
-
