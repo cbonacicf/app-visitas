@@ -4,6 +4,7 @@ import pytz
 import os
 import io
 import json
+import psycopg2
 
 from sqlalchemy import create_engine
 from sqlalchemy.orm import Session

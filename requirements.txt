@@ -9,3 +9,4 @@ dash_bootstrap_components
 dash_extensions
 XlsxWriter
 sqlalchemy
+psycopg2
