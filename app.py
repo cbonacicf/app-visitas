@@ -64,22 +64,6 @@ def convierte_a_str(df):
 
 # datos de visitas programadas y propuestas
 
-# repo_programadas = './data/programadas2.parquet'
-# repo_propuestas = './data/propuestas2.parquet'
-
-# def lectura(repositorio):
-#     df = pl.read_parquet(repositorio)
-#     return df.to_dicts(), df.schema
-
-
-# def lectura2(db):
-#     df = pl.read_database(
-#         query = f'SELECT * FROM {db}',
-#         connection = engine,
-#     )
-#     return df.to_dicts(), df.schema
-    
-
 def lectura(db, consume=False):
     df = pl.read_database(
         query = f'SELECT * FROM {db}',
@@ -158,19 +142,6 @@ universidades_inv = {v: k for k, v in universidades.items()}
 # registra la fecha actual (instantánea) en Santiago
 
 ahora = lambda: datetime.now(pytz.timezone('America/Santiago')).date()
-
-# función que crea id
-
-# def crea_id2(tipo):
-#     file = f'{tipo}.json'
-
-#     with open(file, 'r') as f:
-#         id_nuevo = json.load(f)[tipo] + 1
-
-#     with open(file, 'w') as w:
-#         json.dump({tipo: id_nuevo}, w)
-
-#     return id_nuevo
 
 # función que crea las opciones de visualización de meses
 
@@ -304,36 +275,6 @@ def exporta_programada(datos, mes, usuario):
 
     return output.getvalue()
 
-
-# funciones que agregan, modifican y eliminan una programada (toman datos externos)
-
-# def nueva_programada(dic):
-#     df = pl.read_parquet(repo_programadas)
-#     dic = {'id': crea_id2('programadas')} | dic
-#     df = pl.concat([df, pl.from_dict(dic, schema=schema_programada)], how='diagonal')
-#     df.write_parquet(repo_programadas)
-#     return df.to_dicts()
-
-
-# def modifica_programada(dic, consume=False, id=None):
-#     df = pl.read_parquet(repo_programadas).filter(pl.col('id') != dic['id'])
-#     if id == None:
-#         dic['id'] = crea_id2('programadas')
-#     df = pl.concat([df, pl.from_dict(dic, schema=schema_programada)], how='diagonal')
-#     df.write_parquet(repo_programadas)
-#     if consume:
-#         df = convierte_a_str(df)
-#     return df.to_dicts()
-
-
-# def elimina_programada(id, consume=False):
-#     df = pl.read_parquet(repo_programadas).filter(pl.col('id') != id)
-#     df.write_parquet(repo_programadas)
-#     if consume:
-#         df = convierte_a_str(df)
-#     return df.to_dicts()
-
-
 # funciones que agregan, modifican y eliminan una programada (toman datos externos)
 
 def ob_prog(dic):
@@ -441,24 +382,7 @@ def exporta_propuesta(datos):
     ).write_excel(workbook=output, autofilter=False)
     return output.getvalue()
 
-# funciones que agregan y eliminan una propuesta
-# (sección a eliminar)
-
-# def nueva_propuesta(dic):
-#     df = pl.read_parquet(repo_propuestas)
-#     dic = {'id': crea_id2('propuestas')} | dic
-#     df = pl.concat([df, pl.from_dict(dic, schema=schema_propuesta)])
-#     df.write_parquet(repo_propuestas)
-#     return df.to_dicts()
-
-
-# def elimina_propuesta(id):
-#     df = pl.read_parquet(repo_propuestas).filter(pl.col('id') != id)
-#     df.write_parquet(repo_propuestas)
-#     return df.to_dicts()
-
 # funciones que agregan y eliminan una propuesta (de base PostgreSQL)
-# (nuevas funciones)
 
 def nueva_propuesta(dic):
     propuesta = Propuesta(
@@ -1561,7 +1485,6 @@ def arega_propuesta(click, param, rbd):
             'nombre': colegios[rbd],
         }
         df = nueva_propuesta(dic)
-#        datos_grid = propuesta_vista(df, usuario=param['user']) # datos para grid
         return df, form_colegios_prop(df, param['user'])
 
 
@@ -1603,9 +1526,9 @@ def elimina_colegio_propuesto(click, filas):
         raise PreventUpdate
     else:
         if filas:
-            id = filas[0]['prop_id']
+            id_el = filas[0]['prop_id']
             usuario = filas[0]['organizador_id']
-            df = elimina_propuesta(id)
+            df = elimina_propuesta(id_el)
             return df, form_colegios_prop(df, usuario)
         else:
             return dash.no_update, dash.no_update,
@@ -1624,9 +1547,9 @@ def elimina_colegio_programado(click, filas):
         raise PreventUpdate
     else:
         if filas:
-            id = filas[0]['prog_id']
+            id_el = filas[0]['prog_id']
             usuario = filas[0]['organizador_id']
-            df = elimina_programada(id, consume=True)
+            df = elimina_programada(id_el, consume=True)
             return df, form_modifica(df, usuario)
         else:
             return dash.no_update, dash.no_update
@@ -1647,15 +1570,10 @@ def modifica_colegio_programado(click, datos, filas, param):
         raise PreventUpdate
     else:
         if filas:
-            id = filas[0]['prog_id']
-#            dic_original = (
-#                pl.read_parquet('programadas2.parquet')
-#                .filter(pl.col('id') == id)
-#                .to_dicts()
-#            )[0]
+            id_mod = filas[0]['prog_id']
             dic_original = (
                 pl.DataFrame(datos)
-                .filter(pl.col('prog_id') == id)
+                .filter(pl.col('prog_id') == id_mod)
                 .with_columns([
                     pl.col('fecha').str.strptime(pl.Date, '%Y-%m-%d'),
                     pl.col('hora_ini').str.strptime(pl.Time, '%H:%M:%S'),
@@ -1725,11 +1643,6 @@ def aplica_cambios(click, datos, param, direc, comuna, fecha, hr_ini, hr_fin, hr
         raise PreventUpdate
     else:
         id_visita = param['id_modifica']
-#        dic_original = (
-#            pl.read_parquet('programadas.parquet')
-#            .filter(pl.col('id') == id_visita)
-#            .to_dicts()
-#        )[0]
         dic_original = (
             pl.DataFrame(datos)
             .filter(pl.col('prog_id') == id_visita)
@@ -1741,10 +1654,10 @@ def aplica_cambios(click, datos, param, direc, comuna, fecha, hr_ini, hr_fin, hr
             ])
             .to_dicts()
         )[0]
-        id = dic_original['prog_id']
+        id_mod = dic_original['prog_id']
         nueva_fecha = datetime.strptime(fecha, '%Y-%m-%d').date()
         if dic_original['fecha'] != nueva_fecha:
-            id = None
+            id_mod = None
 
         dic_original['fecha'] = nueva_fecha
         dic_original['direccion'] = direc
@@ -1762,7 +1675,7 @@ def aplica_cambios(click, datos, param, direc, comuna, fecha, hr_ini, hr_fin, hr
         dic_original['estatus'] = est
         dic_original['observaciones'] = obs
 
-        nuevos_datos = modifica_programada(dic_original, consume=True, id=id)
+        nuevos_datos = modifica_programada(dic_original, consume=True, id=id_mod)
         param['id_modifica'] = None
     
         return nuevos_datos, form_modifica(nuevos_datos, param['user']), param
