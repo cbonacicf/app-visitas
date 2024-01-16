@@ -476,7 +476,7 @@ def nueva_propuesta(dic):
     return lectura('propuestas')[0]
 
 
-def elimina_propuesta2(id):
+def elimina_propuesta(id):
     session = Session(engine)
     elimina = session.query(Propuesta).filter(Propuesta.prop_id == id).first()
     session.delete(elimina)
