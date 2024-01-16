@@ -368,7 +368,7 @@ def nueva_programada(dic):
     session.commit()
     session.close()
 
-    return lectura3('programadas')[0]
+    return lectura('programadas')[0]
 
 
 def modifica_programada(dic, consume=False, id=None):
@@ -400,7 +400,7 @@ def modifica_programada(dic, consume=False, id=None):
     session.commit()
     session.close()
 
-    return lectura3('programadas', consume=consume)[0]
+    return lectura('programadas', consume=consume)[0]
 
 
 def elimina_programada(id, consume=False):
@@ -410,7 +410,7 @@ def elimina_programada(id, consume=False):
     session.commit()
     session.close()
 
-    return lectura3('programadas', consume=consume)[0]
+    return lectura('programadas', consume=consume)[0]
 
 
 #### Propuestas
@@ -1535,7 +1535,7 @@ def agrega_feria(click, param, fecha, rbd, direc, comuna, hr_ini, hr_fin, hr_ins
         dic_datos['estatus'] = est
         dic_datos['observaciones'] = obs
     
-        nuevos_datos = nueva_programada2(dic_datos)
+        nuevos_datos = nueva_programada(dic_datos)
     
         return nuevos_datos, form_agrega(), None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None
 
@@ -1560,7 +1560,7 @@ def arega_propuesta(click, param, rbd, nombre):
             'rbd': rbd,
             'nombre': colegios[rbd],
         }
-        df = nueva_propuesta2(dic)
+        df = nueva_propuesta(dic)
         datos_grid = propuesta_vista(df, usuario=param['user']) # datos para grid
         return df, form_colegios_prop(df, param['user'])
 
@@ -1574,7 +1574,7 @@ def arega_propuesta(click, param, rbd, nombre):
     prevent_initial_call=True,
 )
 def exporta_visitas_excel(click, datos, param):
-    df = exporta_programada2(datos, param['mes'], param['user'])
+    df = exporta_programada(datos, param['mes'], param['user'])
     return dcc.send_bytes(df, 'visitas.xlsx')
 
 
@@ -1605,7 +1605,7 @@ def elimina_colegio_propuesto(click, filas):
         if filas:
             id = filas[0]['prop_id']
             usuario = filas[0]['organizador_id']
-            df = elimina_propuesta2(id)
+            df = elimina_propuesta(id)
             return df, form_colegios_prop(df, usuario)
         else:
             return dash.no_update, dash.no_update,
@@ -1626,7 +1626,7 @@ def elimina_colegio_programado(click, filas):
         if filas:
             id = filas[0]['prog_id']
             usuario = filas[0]['organizador_id']
-            df = elimina_programada2(id, consume=True)
+            df = elimina_programada(id, consume=True)
             return df, form_modifica(df, usuario)
         else:
             return dash.no_update, dash.no_update
@@ -1762,7 +1762,7 @@ def aplica_cambios(click, datos, param, direc, comuna, fecha, hr_ini, hr_fin, hr
         dic_original['estatus'] = est
         dic_original['observaciones'] = obs
 
-        nuevos_datos = modifica_programada2(dic_original, consume=True, id=id)
+        nuevos_datos = modifica_programada(dic_original, consume=True, id=id)
         param['id_modifica'] = None
     
         return nuevos_datos, form_modifica(nuevos_datos, param['user']), param
