@@ -1770,4 +1770,4 @@ def aplica_cambios(click, datos, param, direc, comuna, fecha, hr_ini, hr_fin, hr
 
 # ejecución de la aplicación
 if __name__ == '__main__':
-    app.run_server(debug=True, mode='inline', port=8050)
+    app.run_server(debug=False)  #True, mode='inline', port=8050)
