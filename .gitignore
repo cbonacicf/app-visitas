@@ -6,4 +6,7 @@ __pycache__
 requirements_bak.txt
 commit.txt
 app2.py
-
+./data/programadas.parquet
+./data/programadas2.parquet
+./data/propuestas.parquet
+./data/propuestas2.parquet
