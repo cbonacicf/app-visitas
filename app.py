@@ -23,7 +23,7 @@ from dash.exceptions import PreventUpdate
 fecha_inicial = date(2024, 3, 1)
 fecha_final = date(2024, 11, 30)
 
-# inicialización de usuario
+# iuevaicialización de usuario
 
 usuario = 0
 
@@ -1547,10 +1547,10 @@ def agrega_feria(click, param, fecha, rbd, direc, comuna, hr_ini, hr_fin, hr_ins
     Input('btn-ag-prop', 'n_clicks'),
     State('parametros', 'data'),
     State('in-rbd-prop', 'value'),
-    State('in-nom-prop', 'label'),
+#    State('in-nom-prop', 'label'),
     prevent_initial_call=True,
 )
-def arega_propuesta(click, param, rbd, nombre):
+def arega_propuesta(click, param, rbd):
     if click == 0:
         raise PreventUpdate
     else:
@@ -1561,7 +1561,7 @@ def arega_propuesta(click, param, rbd, nombre):
             'nombre': colegios[rbd],
         }
         df = nueva_propuesta(dic)
-        datos_grid = propuesta_vista(df, usuario=param['user']) # datos para grid
+#        datos_grid = propuesta_vista(df, usuario=param['user']) # datos para grid
         return df, form_colegios_prop(df, param['user'])
 
 
