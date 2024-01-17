@@ -929,7 +929,7 @@ def viz_modifica(datos, usuario):
     return html.Div([
         dbc.Col([
             dag.AgGrid(
-                id='ferias-prg',
+                id='ferias-prg-usr',
                 rowData=programadas_usuario(datos, usuario, ahora()),
                 defaultColDef={'resizable': True},
                 columnDefs=columnDefs_mod,
@@ -1539,7 +1539,7 @@ def elimina_colegio_propuesto(click, filas):
     Output('datos-programadas', 'data'),
     Output('contenido-edicion', 'children'), # recibe la misma forma actualizada: form_modifica
     Input('btn-elim-visita', 'n_clicks'),
-    State('ferias-prg', 'selectedRows'),
+    State('ferias-prg-usr', 'selectedRows'),
     prevent_initial_call=True,
 )
 def elimina_colegio_programado(click, filas):
@@ -1561,7 +1561,7 @@ def elimina_colegio_programado(click, filas):
     Output('parametros', 'data'),
     Input('btn-mod-visita', 'n_clicks'),
     State('datos-programadas', 'data'),
-    State('ferias-prg', 'selectedRows'),
+    State('ferias-prg-usr', 'selectedRows'),
     State('parametros', 'data'),
     prevent_initial_call=True,
 )
