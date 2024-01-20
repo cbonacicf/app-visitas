@@ -23,7 +23,7 @@ from dash.exceptions import PreventUpdate
 fecha_inicial = date(2024, 3, 1)
 fecha_final = date(2024, 11, 30)
 
-# iuevaicialización de usuario
+# inicialización de usuario
 
 usuario = 0
 
@@ -36,9 +36,9 @@ server_conn = os.environ['PGHOST']
 port_conn = os.environ['PGPORT']
 database_conn = os.environ['PGDATABASE']
 
-string_conn = f"postgresql://{user_conn}:{password_conn}@{server_conn}:{port_conn}/{database_conn}"
+string_conn = f"postgresql+psycopg2://{user_conn}:{password_conn}@{server_conn}:{port_conn}/{database_conn}"
 
-engine = create_engine(string_conn)
+engine = create_engine(string_conn, pool_pre_ping=True)
 
 # creación de clases de las bases de datos
 
