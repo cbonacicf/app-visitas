@@ -275,6 +275,18 @@ def exporta_programada(datos, mes, usuario):
 
     return output.getvalue()
 
+# función que lee universidades que asisten a visita
+
+def dic_asisten(id_prog):
+    return dict(
+        pl.read_database(
+            query = f'SELECT * FROM asisten WHERE programada_id = {id_prog} ORDER BY organizador_id',
+            connection = engine,
+        )
+        .select(['organizador_id', 'asiste'])
+        .iter_rows()
+    )
+
 # funciones que agregan, modifican y eliminan una programada (toman datos externos)
 
 def ob_prog(dic):
