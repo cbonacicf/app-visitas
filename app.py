@@ -621,20 +621,123 @@ def grid_programadas(datos, mes):
     )
 
 # botón que exporta selección a excel
+
 btn_exp_visitas = dbc.Row([
     html.Button('Exportar a Excel', id='exporta-visitas', className='btn btn-outline-primary',
                 style={'width': '15%', 'marginRight': 10, 'marginTop': 15, 'padding': '6px 20px'}),
     dcc.Download(id='exporta-visitas-archivo'),
 ], justify='end',)
 
+# modal con la información de la visita
 
+reporte_programada = html.Div(
+    dbc.Modal(
+        [
+            dbc.ModalHeader(html.H4('Información de la visita')),
+            dbc.ModalBody(id='reporte-prog-contenido'),
+            dbc.ModalFooter(dbc.Button('Cerrar', id='btn-cerrar-reporte-prog')),
+        ],
+        id='modal-reporte-prog',
+        size='lg',
+    ),
+)
+
+# forma
 def form_visualiza(datos, mes):
     return dbc.Form([
         html.H3(['Visitas Programadas'], style={'marginLeft': 15, 'marginBottom': 12, 'marginTop': 10}),
         html.Div(botones_mes(mes)),
         html.Div(grid_programadas(datos, mes)),
+        html.Div(reporte_programada),
         html.Div(btn_exp_visitas),
     ], id='form-visualiza')
+
+
+#### Reporte visita
+# diccionario que da formato
+
+formato_items = {
+    'fecha': lambda x: f'{datetime.strptime(x, "%Y-%m-%d").date():%d %B %Y}',
+    'direccion': lambda x: '' if x == None else x,
+    'comuna_id': lambda x: comunas[x],
+    'hora_ins': lambda x: x[:-3] if x != '00:00:00' else '',
+    'hora_ini': lambda x: x[:-3] if x != '00:00:00' else '',
+    'hora_fin': lambda x: x[:-3] if x != '00:00:00' else '',
+    'orientador': lambda x: '' if x == None else x,
+}
+
+def da_formato(dic):
+    return {k: formato_items.get(k, lambda x: x)(dic[k]) for k in dic.keys()}
+
+# parte general del modal
+
+items_reporte = ['organizador', 'nombre', 'rbd', 'fecha', 'direccion', 'comuna_id', 'hora_ins', 'hora_ini', 'hora_fin', 'orientador']
+items_reporte_label = ['Organizador', 'Nombre', 'RBD', 'Fecha', 'Dirección', 'Comuna', 'Hora instalación', 'Hora inicio', 'Hora término', 'Orientador']
+items_reporte_dic = dict(zip(items_reporte, items_reporte_label))
+
+def info_gral(item, dic):
+    return html.Div([
+        html.P(items_reporte_dic[item], style={'width': '18%', 'fontSize': '16px', 'marginLeft': 20, 'marginBottom': -2, 'display': 'inline-block'}),
+        html.P(': ' + str(dic[item]), style={'width': '75%', 'fontSize': '16px', 'marginBottom': -2, 'display': 'inline-block'}),
+    ])
+
+def seccion_info_gral(dic):
+    dic_reducido = {k: dic[k] for k in items_reporte}
+    dic_reducido_fto = da_formato(dic_reducido)
+    return html.Div(
+        [html.H6('Información general:', style={'fontSize': '17px'})] +
+        [info_gral(item, dic_reducido_fto) for item in items_reporte]
+    )
+
+# observaciones
+
+def seccion_observaciones(dic):
+    valor = '' if dic['observaciones'] == None else dic['observaciones']
+    return html.Div(
+        dbc.Row([
+            html.P('Observaciones', style={'width': '18%', 'fontSize': '16px', 'marginLeft': 20, 'marginBottom': -2, 'display': 'inline-block'}),
+            dcc.Textarea(value=valor, style={'fontSize': '15px', 'width': '70%', 'height': 80, 'display': 'inline-block'}),
+        ]),
+        style={'marginTop': 20}
+    )
+
+# listado de universidades asistentes
+
+def universidad_asiste(n, usuario):
+    return html.Div(
+        html.P(str(n) + ') ' + universidades[usuario], style={'marginLeft': 20, 'marginBottom': -2, 'fontSize': '16px', 'fontWeight': 'normal'})
+    )
+
+def seccion_universidades_asisten(dic, crt=1):
+    dic_crt = {k: v for k, v in dic.items() if v == crt}
+    return html.Div([
+        html.H6('Universidades que asisten:' if crt == 1 else 'Universidades que no asisten:', style={'fontSize': '17px'}),
+        dbc.Col(
+            [universidad_asiste(n, usuario) for n, usuario in enumerate(dic_crt.keys(), start=1)]
+        )
+    ])
+
+# selector de participación
+
+def selector_asiste(usuario, dic):
+    return html.Div([
+        linea,
+        html.H6('Asistencia a visita:', style={'fontSize': '17px'}),
+        dbc.Row([
+            html.P(f'{universidades[usuario]}:', style={'width': '60%', 'fontSize': '16px', 'marginTop': 2, 'marginLeft': 20, 'display': 'inline-block'}),
+            dcc.RadioItems(
+                id = 'selector-asiste',
+                options=[
+                   {'label': 'Sí', 'value': 1},
+                   {'label': 'No', 'value': 0},
+                ],
+                value = dic[usuario],
+                style = {'textAlign': 'start', 'width': '20%', 'display': 'inline-block'},
+                labelStyle = {'display': 'inline-block', 'fontSize': '16px', 'fontWeight': 'normal'},
+                inputStyle = {'marginRight': '5px', 'marginLeft': '20px'},
+            )
+        ]),
+    ], style={'marginLeft': 10, 'marginBottom': 1, 'marginTop': 20})
 
 
 #### Edición
@@ -1679,6 +1782,58 @@ def aplica_cambios(click, datos, param, direc, comuna, fecha, hr_ini, hr_fin, hr
         param['id_modifica'] = None
     
         return nuevos_datos, form_modifica(nuevos_datos, param['user']), param
+
+# abre modal con la información de la visita programada
+@app.callback(
+    Output('modal-reporte-prog', 'is_open'),
+    Output('reporte-prog-contenido', 'children'),
+    Output('viz-ferias', 'selectedRows'),
+    Input('viz-ferias', 'selectedRows'),
+    Input('btn-cerrar-reporte-prog', 'n_clicks'),
+    State('datos-programadas', 'data'),
+    State('parametros', 'data')
+)
+def abre_modal_reporte(visita, _, datos, param):
+    disparador = dash.ctx.triggered_id
+
+    if disparador == 'btn-cerrar-reporte-prog':
+        return False, dash.no_update, []
+
+    if visita:
+        id_sel = visita[0]['prog_id']
+        asiste_dic = dic_asisten(id_sel)
+        datos = next(item for item in datos if item['prog_id'] == id_sel)
+        if param['user'] == 0:
+            return True, html.Div([
+                seccion_info_gral(datos),
+                linea,
+                seccion_universidades_asisten(asiste_dic),
+            ]), dash.no_update
+        else:
+            return True, html.Div([
+                seccion_info_gral(datos),
+                seccion_observaciones(datos),
+                linea,
+                seccion_universidades_asisten(asiste_dic),
+                espacio,
+                seccion_universidades_asisten(asiste_dic, crt=0),
+                selector_asiste(param['user'], asiste_dic),
+            ]), dash.no_update
+
+    return dash.no_update, dash.no_update, dash.no_update
+
+# cambia la condición de asistente a visita
+@app.callback(
+    Output('parametros', 'data'),
+    Input('selector-asiste', 'value'),
+    State('viz-ferias', 'selectedRows'),
+    State('parametros', 'data'),
+    prevent_initial_call=True,
+)
+def cambia_condicion_asiste(asiste, visita, param):
+    id_sel = visita[0]['prog_id']
+    cambia_asiste(param['user'], id_sel, asiste)
+    return param
 
 
 # ejecución de la aplicación
