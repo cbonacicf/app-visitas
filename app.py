@@ -47,6 +47,7 @@ Base.prepare(autoload_with=engine)
 
 Propuesta = Base.classes.propuestas
 Programada = Base.classes.programadas
+Asiste = Base.classes.asisten
 
 ### Lectura de datos
 # función que convierte columnas datetime a str
