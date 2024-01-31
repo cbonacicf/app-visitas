@@ -365,6 +365,15 @@ def elimina_programada(id, consume=False):
 
     return lectura('programadas', consume=consume)[0]
 
+# modifica condición de asistente
+
+def cambia_asiste(usuario, programada, asiste):
+    session = Session(engine)
+    modifica = session.query(Asiste).filter(Asiste.organizador_id == usuario).filter(Asiste.programada_id == programada).first()
+    modifica.asiste = asiste,
+    session.commit()
+    session.close()
+    
 
 #### Propuestas
 # función que selecciona datos para la visualización y edición del listado de propuestas de colegios
