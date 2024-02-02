@@ -237,7 +237,7 @@ def programadas_fecha(datos, fecha):
         .filter(pl.col('fecha').str.strptime(pl.Date, '%Y-%m-%d') == fecha)
         .with_columns([
             pl.col('fecha').str.strptime(pl.Date, '%Y-%m-%d'),
-            pl.arange(1, pl.count()+1).alias('orden'),
+            pl.arange(1, pl.len()+1).alias('orden'),
         ])
         .sort(['fecha', 'prog_id'])
     ).to_dicts()
@@ -253,7 +253,7 @@ def programadas_usuario(datos, usuario, hoy):
         ])
         .sort(['fecha', 'prog_id'])
         .with_columns([
-            pl.arange(1, pl.count()+1).alias('orden'),
+            pl.arange(1, pl.len()+1).alias('orden'),
         ])
         .to_dicts()
     )
@@ -1850,7 +1850,7 @@ def abre_modal_reporte(visita, _, datos, param):
     Input('selector-asiste', 'value'),
     State('viz-ferias', 'selectedRows'),
     State('parametros', 'data'),
-    prevent_initial_call=True,
+#    prevent_initial_call=True,
 )
 def cambia_condicion_asiste(asiste, visita, param):
     id_sel = visita[0]['prog_id']
