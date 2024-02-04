@@ -325,31 +325,30 @@ def nueva_programada(dic):
     return lectura('programadas')[0]
 
 
-def modifica_programada(dic, consume=False, id=None):
+def modifica_programada(id_prog, dic, cambia_fecha=False, consume=False):
 
     session = Session(engine)
-    if id == None:
-        elimina = session.query(Programada).filter(Programada.prog_id == id).first()
-        session.delete(elimina)
-        programada = ob_prog(dic)
-        session.add(programada)
+    visita = session.query(Programada).filter(Programada.prog_id == id_prog).first()
+    if cambia_fecha:
+        session.delete(visita)
+        agrega = ob_prog(dic)
+        session.add(agrega)
     else:
-        modifica = session.query(Programada).filter(Programada.prog_id == id).first()
-        modifica.fecha = dic['fecha'],
-        modifica.direccion = dic['direccion'],
-        modifica.comuna_id = dic['comuna_id'],
-        modifica.hora_ini = dic['hora_ini'],
-        modifica.hora_fin = dic['hora_fin'],
-        modifica.hora_ins = dic['hora_ins'],
-        modifica.contacto = dic['contacto'],
-        modifica.contacto_tel = dic['contacto_tel'],
-        modifica.contacto_mail = dic['contacto_mail'],
-        modifica.contacto_cargo = dic['contacto_cargo'],
-        modifica.orientador = dic['orientador'],
-        modifica.orientador_tel = dic['orientador_tel'],
-        modifica.orientador_mail = dic['orientador_mail'],
-        modifica.estatus = dic['estatus'],
-        modifica.observaciones = dic['observaciones'],
+        visita.fecha = dic['fecha'],
+        visita.direccion = dic['direccion'],
+        visita.comuna_id = dic['comuna_id'],
+        visita.hora_ini = dic['hora_ini'],
+        visita.hora_fin = dic['hora_fin'],
+        visita.hora_ins = dic['hora_ins'],
+        visita.contacto = dic['contacto'],
+        visita.contacto_tel = dic['contacto_tel'],
+        visita.contacto_mail = dic['contacto_mail'],
+        visita.contacto_cargo = dic['contacto_cargo'],
+        visita.orientador = dic['orientador'],
+        visita.orientador_tel = dic['orientador_tel'],
+        visita.orientador_mail = dic['orientador_mail'],
+        visita.estatus = dic['estatus'],
+        visita.observaciones = dic['observaciones'],
 
     session.commit()
     session.close()
@@ -1768,21 +1767,13 @@ def aplica_cambios(click, datos, param, direc, comuna, fecha, hr_ini, hr_fin, hr
         raise PreventUpdate
     else:
         id_visita = param['id_modifica']
-        dic_original = (
-            pl.DataFrame(datos)
-            .filter(pl.col('prog_id') == id_visita)
-            .with_columns([
-                pl.col('fecha').str.strptime(pl.Date, '%Y-%m-%d'),
-                pl.col('hora_ini').str.strptime(pl.Time, '%H:%M:%S'),
-                pl.col('hora_fin').str.strptime(pl.Time, '%H:%M:%S'),
-                pl.col('hora_ins').str.strptime(pl.Time, '%H:%M:%S'),
-            ])
-            .to_dicts()
-        )[0]
-        id_mod = dic_original['prog_id']
-        nueva_fecha = datetime.strptime(fecha, '%Y-%m-%d').date()
+        dic_original = next(item for item in datos if item['prog_id'] == id_visita)
+        dic_original['fecha'] = datetime.strptime(dic_original['fecha'], '%Y-%m-%d')
+        nueva_fecha = datetime.strptime(fecha, '%Y-%m-%d')
+
+        cambia_fecha = False
         if dic_original['fecha'] != nueva_fecha:
-            id_mod = None
+            cambia_fecha = True
 
         dic_original['fecha'] = nueva_fecha
         dic_original['direccion'] = direc
@@ -1800,10 +1791,11 @@ def aplica_cambios(click, datos, param, direc, comuna, fecha, hr_ini, hr_fin, hr
         dic_original['estatus'] = est
         dic_original['observaciones'] = obs
 
-        nuevos_datos = modifica_programada(dic_original, consume=True, id=id_mod)
+        nuevos_datos = modifica_programada(id_visita, dic_original, cambia_fecha=cambia_fecha, consume=True)
         param['id_modifica'] = None
     
         return nuevos_datos, form_modifica(nuevos_datos, param['user']), param
+
 
 # abre modal con la información de la visita programada
 @app.callback(
