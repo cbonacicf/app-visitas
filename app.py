@@ -1706,7 +1706,7 @@ def modifica_colegio_programado(click, datos, filas, param):
                 ])
                 .to_dicts()
             )[0]
-            param['id_modifica'] = id
+            param['id_modifica'] = id_mod
             return form_modifica_visita(datos, dic_original), param
         else:
             return dash.no_update, dash.no_update
