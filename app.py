@@ -9,6 +9,7 @@ import psycopg2
 from sqlalchemy import create_engine
 from sqlalchemy.orm import Session
 from sqlalchemy.ext.automap import automap_base
+from sqlalchemy.pool import NullPool
 
 import dash
 from dash import dcc
@@ -38,7 +39,7 @@ database_conn = os.environ['PGDATABASE']
 
 string_conn = f"postgresql+psycopg2://{user_conn}:{password_conn}@{server_conn}:{port_conn}/{database_conn}"
 
-engine = create_engine(string_conn, pool_pre_ping=True)
+engine = create_engine(string_conn, poolclass=NullPool) #, pool_pre_ping=True)
 
 # creación de clases de las bases de datos
 
