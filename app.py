@@ -318,62 +318,58 @@ def ob_prog(dic):
 def nueva_programada(dic):
     programada = ob_prog(dic)
 
-    session = Session(engine)
-    session.add(programada)
-    session.commit()
-    session.close()
+    with Session(engine) as session:
+        session.add(programada)
+        session.commit()
 
     return lectura('programadas')[0]
 
 
 def modifica_programada(id_prog, dic, cambia_fecha=False, consume=False):
 
-    session = Session(engine)
-    visita = session.query(Programada).filter(Programada.prog_id == id_prog).first()
-    if cambia_fecha:
-        session.delete(visita)
-        agrega = ob_prog(dic)
-        session.add(agrega)
-    else:
-        visita.fecha = dic['fecha'],
-        visita.direccion = dic['direccion'],
-        visita.comuna_id = dic['comuna_id'],
-        visita.hora_ini = dic['hora_ini'],
-        visita.hora_fin = dic['hora_fin'],
-        visita.hora_ins = dic['hora_ins'],
-        visita.contacto = dic['contacto'],
-        visita.contacto_tel = dic['contacto_tel'],
-        visita.contacto_mail = dic['contacto_mail'],
-        visita.contacto_cargo = dic['contacto_cargo'],
-        visita.orientador = dic['orientador'],
-        visita.orientador_tel = dic['orientador_tel'],
-        visita.orientador_mail = dic['orientador_mail'],
-        visita.estatus = dic['estatus'],
-        visita.observaciones = dic['observaciones'],
+    with Session(engine) as session:
+        visita = session.query(Programada).filter(Programada.prog_id == id_prog).first()
+        if cambia_fecha:
+            session.delete(visita)
+            agrega = ob_prog(dic)
+            session.add(agrega)
+        else:
+            visita.fecha = dic['fecha'],
+            visita.direccion = dic['direccion'],
+            visita.comuna_id = dic['comuna_id'],
+            visita.hora_ini = dic['hora_ini'],
+            visita.hora_fin = dic['hora_fin'],
+            visita.hora_ins = dic['hora_ins'],
+            visita.contacto = dic['contacto'],
+            visita.contacto_tel = dic['contacto_tel'],
+            visita.contacto_mail = dic['contacto_mail'],
+            visita.contacto_cargo = dic['contacto_cargo'],
+            visita.orientador = dic['orientador'],
+            visita.orientador_tel = dic['orientador_tel'],
+            visita.orientador_mail = dic['orientador_mail'],
+            visita.estatus = dic['estatus'],
+            visita.observaciones = dic['observaciones'],
 
-    session.commit()
-    session.close()
+        session.commit()
 
     return lectura('programadas', consume=consume)[0]
 
 
 def elimina_programada(id, consume=False):
-    session = Session(engine)
-    elimina = session.query(Programada).filter(Programada.prog_id == id).first()
-    session.delete(elimina)
-    session.commit()
-    session.close()
+    with Session(engine) as session:
+        elimina = session.query(Programada).filter(Programada.prog_id == id).first()
+        session.delete(elimina)
+        session.commit()
 
     return lectura('programadas', consume=consume)[0]
 
 # modifica condición de asistente
 
 def cambia_asiste(usuario, programada, asiste):
-    session = Session(engine)
-    modifica = session.query(Asiste).filter(Asiste.organizador_id == usuario).filter(Asiste.programada_id == programada).first()
-    modifica.asiste = asiste,
-    session.commit()
-    session.close()
+    with Session(engine) as session:
+        modifica = session.query(Asiste).filter(Asiste.organizador_id == usuario).filter(Asiste.programada_id == programada).first()
+        modifica.asiste = asiste,
+        session.commit()
     
 
 #### Propuestas
@@ -414,20 +410,18 @@ def nueva_propuesta(dic):
         nombre=dic['nombre'],
     )
 
-    session = Session(engine)
-    session.add(propuesta)
-    session.commit()
-    session.close()
+    with Session(engine) as session:
+        session.add(propuesta)
+        session.commit()
 
     return lectura('propuestas')[0]
 
 
 def elimina_propuesta(id):
-    session = Session(engine)
-    elimina = session.query(Propuesta).filter(Propuesta.prop_id == id).first()
-    session.delete(elimina)
-    session.commit()
-    session.close()
+    with Session(engine) as session:
+        elimina = session.query(Propuesta).filter(Propuesta.prop_id == id).first()
+        session.delete(elimina)
+        session.commit()
 
     return lectura('propuestas')[0]
 
