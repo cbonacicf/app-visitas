@@ -38,6 +38,7 @@ port_conn = os.environ['PGPORT']
 database_conn = os.environ['PGDATABASE']
 
 string_conn = f"postgresql+psycopg2://{user_conn}:{password_conn}@{server_conn}:{port_conn}/{database_conn}"
+string_conn = os.environ['DATABASE_PRIVATE_URL']
 
 engine = create_engine(string_conn, pool_pre_ping=True, poolclass=NullPool)
 
