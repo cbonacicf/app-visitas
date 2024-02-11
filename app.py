@@ -68,6 +68,9 @@ def convierte_a_str(df):
 # datos de visitas programadas y propuestas
 
 def lectura(db, consume=False):
+    with Session(engine) as session:
+        session.commit()
+
     df = pl.read_database(
         query = f'SELECT * FROM {db}',
         connection = engine,
