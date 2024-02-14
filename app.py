@@ -6,7 +6,7 @@ import io
 # import json
 import psycopg2
 
-from sqlalchemy import create_engine, URL
+from sqlalchemy import create_engine
 from sqlalchemy.orm import Session
 from sqlalchemy.ext.automap import automap_base
 from sqlalchemy.pool import NullPool
@@ -37,20 +37,10 @@ server_conn = os.environ['PGHOST']
 port_conn = os.environ['PGPORT']
 database_conn = os.environ['PGDATABASE']
 
-
-# conexión a base en Render
-objeto_url = URL.create(
-    'postgresql+psycopg2',
-    username = 'dbvisitas_user',
-    password = 'WYCcpx0iahOyVxrmz5eAAaI9cHPh3F1h',
-    host = 'dpg-cn5oe2un7f5s738jitag-a.oregon-postgres.render.com',
-    database = 'dbvisitas',
-)
-
 string_conn = f"postgresql+psycopg2://{user_conn}:{password_conn}@{server_conn}:{port_conn}/{database_conn}"
 #string_conn = os.environ['DATABASE_PRIVATE_URL']
 
-engine = create_engine(objeto_url, pool_pre_ping=True, poolclass=NullPool)
+engine = create_engine(string_conn, pool_pre_ping=True, poolclass=NullPool)
 
 # creación de clases de las bases de datos
 
@@ -78,6 +68,9 @@ def convierte_a_str(df):
 # datos de visitas programadas y propuestas
 
 def lectura(db, consume=False):
+    with Session(engine) as session:
+        session.commit()
+
     df = pl.read_database(
         query = f'SELECT * FROM {db}',
         connection = engine,
