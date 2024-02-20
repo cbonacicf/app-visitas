@@ -3,10 +3,9 @@ from datetime import date, time, datetime, timedelta
 import pytz
 import os
 import io
-# import json
 import psycopg2
 
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, URL
 from sqlalchemy.orm import Session
 from sqlalchemy.ext.automap import automap_base
 from sqlalchemy.pool import NullPool
@@ -31,16 +30,18 @@ usuario = 0
 ### Conexión
 # parámetros de conexión
 
-user_conn = os.environ['PGUSER']
-password_conn = os.environ['PGPASSWORD']
-server_conn = os.environ['PGHOST']
-port_conn = os.environ['PGPORT']
-database_conn = os.environ['PGDATABASE']
+objeto_url = URL.create(
+    'postgresql+psycopg2',
+    username = os.environ['PGUSER'],
+    password = os.environ['PGPASSWORD'],
+    host = os.environ['PGHOST'],
+    port = os.environ['PGPORT'],
+    database = os.environ['PGDATABASE'],
+)
 
-string_conn = f"postgresql+psycopg2://{user_conn}:{password_conn}@{server_conn}:{port_conn}/{database_conn}"
 #string_conn = os.environ['DATABASE_PRIVATE_URL']
 
-engine = create_engine(string_conn, pool_pre_ping=True, poolclass=NullPool)
+engine = create_engine(objeto_url, pool_pre_ping=True, poolclass=NullPool)
 
 # creación de clases de las bases de datos
 
@@ -68,9 +69,6 @@ def convierte_a_str(df):
 # datos de visitas programadas y propuestas
 
 def lectura(db, consume=False):
-    with Session(engine) as session:
-        session.commit()
-
     df = pl.read_database(
         query = f'SELECT * FROM {db}',
         connection = engine,
@@ -1337,16 +1335,19 @@ app = DashProxy(__name__, transforms=[MultiplexerTransform()], external_styleshe
 app.config.suppress_callback_exceptions = True
 
 # layout de la aplicación
-app.layout = dbc.Container([
-    encabezado,
-    html.Div(usuario_actual(usuario), id='contenido-usuario'),    
-    tabs_inicio(usuario),  # id='contenido-inicio'
-    form_footer(),
+def serve_layout():
+    return dbc.Container([
+        encabezado,
+        html.Div(usuario_actual(usuario), id='contenido-usuario'),    
+        tabs_inicio(usuario),
+        form_footer(),
 
-    dcc.Store(id='datos-programadas', data=programadas),
-    dcc.Store(id='datos-propuestas', data=propuestas),
-    dcc.Store(id='parametros', data=parametros_iniciales),
-])
+        dcc.Store(id='datos-programadas', data=lectura('programadas')[0]),
+        dcc.Store(id='datos-propuestas', data=lectura('propuestas')[0]),
+        dcc.Store(id='parametros', data=parametros_iniciales),
+    ])
+
+app.layout = serve_layout
 
 # CALLBACK
 # TAB: ventana inicial
