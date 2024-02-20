@@ -651,13 +651,15 @@ btn_exp_visitas = dbc.Row([
 reporte_programada = html.Div(
     dbc.Modal(
         [
-            dbc.ModalHeader(html.H4('Información de la visita')),
+            dbc.ModalHeader(html.H4('Información de la visita'), close_button=False),
             dbc.ModalBody(id='reporte-prog-contenido'),
             dbc.ModalFooter(dbc.Button('Cerrar', id='btn-cerrar-reporte-prog')),
         ],
         id='modal-reporte-prog',
         size='lg',
-    ),
+        keyboard=False,
+        backdrop="static",
+   ),
 )
 
 # forma
