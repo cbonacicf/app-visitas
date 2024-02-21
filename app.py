@@ -39,9 +39,9 @@ objeto_url = URL.create(
     database = os.environ['PGDATABASE'],
 )
 
-#string_conn = os.environ['DATABASE_PRIVATE_URL']
+string_conn = os.environ['DATABASE_PRIVATE_URL'] + '?connect_timeout=300'
 
-engine = create_engine(objeto_url, pool_pre_ping=True, poolclass=NullPool)
+engine = create_engine(string_conn, pool_pre_ping=True, poolclass=NullPool)
 
 # creación de clases de las bases de datos
 
