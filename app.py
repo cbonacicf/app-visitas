@@ -17,6 +17,9 @@ import dash_bootstrap_components as dbc
 from dash_extensions.enrich import Input, Output, State, DashProxy, MultiplexerTransform, html
 from dash.exceptions import PreventUpdate
 
+from reportlab.pdfgen.canvas import Canvas
+from reportlab.lib.colors import HexColor
+
 ### Parámetros
 # período de duración de las visitas
 
@@ -373,6 +376,67 @@ def cambia_asiste(usuario, programada, asiste):
         modifica.asiste = asiste,
         session.commit()
     
+# reporte
+
+orden_reporte = ['organizador', 'nombre', 'rbd', 'fecha', 'direccion', 'comuna_id', 'hora_ins', 'hora_ini', 'hora_fin', 'orientador']
+map_orden_reporte = map_orden_todas.copy()
+map_orden_reporte['organizador'] = 'Organizador'
+
+def def_asisten(id_prog):
+    return (
+        pl.read_database(
+            query = 'SELECT * FROM asisten',
+            connection = engine,
+        )
+        .filter((pl.col('asiste') == 1) & (pl.col('programada_id') == id_prog))
+        .sort('organizador_id')
+        .to_dicts()
+    )
+    
+def exporta_reporte(visita, asisten):
+    output = io.BytesIO()
+
+    cm = 72. / 2.54
+    top = 792. - (1.3 * cm) - 24
+    step = 19
+    canvas = Canvas(output, pagesize=(612., 792.))
+
+    canvas.setFont('Helvetica', 24)
+    canvas.setFillColor(HexColor('#1b81e5'))
+    canvas.drawCentredString(306, top, 'Programa de Visitas a Colegios 2024')
+    top -= (step + 14)
+    
+    canvas.setFont('Helvetica', 16)
+    canvas.drawString((2 * cm), top, 'Antecedentes de la Visita')
+    top -= (step + 4)
+    
+    canvas.setFont('Helvetica', 12)
+    canvas.setFillColor(HexColor('#596a6d'))
+    for item in orden_reporte:
+        canvas.drawString((2.5 * cm), top, f'{map_orden_reporte[item]}')
+        canvas.drawString((2.5 * cm)*2.02, top, ':')
+        canvas.drawString((2.5 * cm)*2.17, top, f'{formato_items.get(item, lambda x: x)(visita[item])}')
+        top -= step
+    
+    top -= step
+    canvas.setFont('Helvetica', 16)
+    canvas.setFillColor(HexColor('#1b81e5'))
+    canvas.drawString((2 * cm), top, 'Universidades Participantes')
+    top -= (step + 4)
+    
+    canvas.setFont('Helvetica', 12)
+    canvas.setFillColor(HexColor('#596a6d'))
+    for asiste in asisten:
+        canvas.drawString((2.5 * cm), top, f"{universidades[asiste['organizador_id']]}")
+        top -= step
+
+    canvas.save()
+
+    retorna = output.getvalue()
+    output.close()
+
+    return retorna
+
 
 #### Propuestas
 # función que selecciona datos para la visualización y edición del listado de propuestas de colegios
@@ -653,7 +717,13 @@ reporte_programada = html.Div(
         [
             dbc.ModalHeader(html.H4('Información de la visita'), close_button=False),
             dbc.ModalBody(id='reporte-prog-contenido'),
-            dbc.ModalFooter(dbc.Button('Cerrar', id='btn-cerrar-reporte-prog')),
+            dbc.ModalFooter(
+                html.Div([
+                    dbc.Button('Descargar reporte', id='descarga-reporte', className='me-2'),
+                    dbc.Button('Cerrar', id='btn-cerrar-reporte-prog', className='me-2'),
+                    dcc.Download(id='descarga-reporte-archivo'),
+                ])
+            ),
         ],
         id='modal-reporte-prog',
         size='lg',
@@ -676,14 +746,17 @@ def form_visualiza(datos, mes):
 #### Reporte visita
 # diccionario que da formato
 
+fto_hora = lambda x: x[:-3] + ' hrs.' if x != '00:00:00' else ''
+fto_blanco = lambda x: '' if x == None else x
+
 formato_items = {
-    'fecha': lambda x: f'{datetime.strptime(x, "%Y-%m-%d").date():%d %B %Y}',
-    'direccion': lambda x: '' if x == None else x,
+    'fecha': lambda x: f'{datetime.strptime(x, "%Y-%m-%d").date():%A, %d %B %Y}',
+    'direccion': fto_blanco,
     'comuna_id': lambda x: comunas[x],
-    'hora_ins': lambda x: x[:-3] if x != '00:00:00' else '',
-    'hora_ini': lambda x: x[:-3] if x != '00:00:00' else '',
-    'hora_fin': lambda x: x[:-3] if x != '00:00:00' else '',
-    'orientador': lambda x: '' if x == None else x,
+    'hora_ins': fto_hora,
+    'hora_ini': fto_hora,
+    'hora_fin': fto_hora,
+    'orientador': fto_blanco,
 }
 
 def da_formato(dic):
@@ -1850,6 +1923,21 @@ def cambia_condicion_asiste(asiste, visita, param):
     id_sel = visita[0]['prog_id']
     cambia_asiste(param['user'], id_sel, asiste)
     return param
+
+# descarga reporte de la visita en formato pdf
+@app.callback(
+    Output('descarga-reporte-archivo', 'data'),
+    Input('descarga-reporte', 'n_clicks'),
+    State('viz-ferias', 'selectedRows'),
+    State('datos-programadas', 'data'),
+    prevent_initial_call=True,
+)
+def descarga_reporte_pdf(_, filas, datos):
+    id_rep = filas[0]['prog_id']
+    visita = next(item for item in datos if item['prog_id'] == id_rep)
+    asisten = def_asisten(id_rep)
+    doc = exporta_reporte(visita, asisten)
+    return dcc.send_bytes(doc, f"reporte_{str(visita['rbd'])}.pdf")
 
 
 # ejecución de la aplicación
