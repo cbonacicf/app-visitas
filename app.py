@@ -719,8 +719,8 @@ reporte_programada = html.Div(
             dbc.ModalBody(id='reporte-prog-contenido'),
             dbc.ModalFooter(
                 html.Div([
-                    dbc.Button('Descargar reporte', id='descarga-reporte', className='me-2'),
-                    dbc.Button('Cerrar', id='btn-cerrar-reporte-prog', className='me-2'),
+                    dbc.Button('Descargar reporte', id='descarga-reporte', outline=True, color="primary", className='me-2'),
+                    dbc.Button('Cerrar', id='btn-cerrar-reporte-prog', outline=True, color="primary", className='me-2'),
                     dcc.Download(id='descarga-reporte-archivo'),
                 ])
             ),
