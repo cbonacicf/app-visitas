@@ -149,6 +149,7 @@ universidades_inv = {v: k for k, v in universidades.items()}
 # registra la fecha actual (instantánea) en Santiago
 
 ahora = lambda: datetime.now(pytz.timezone('America/Santiago')).date()
+dia_laboral = lambda: min({ahora() + timedelta(days=i) for i in range(14)}.difference(feriados))
 
 # función que crea las opciones de visualización de meses
 
@@ -500,7 +501,8 @@ color = '#2FA4E7'
 linea = html.Hr(style={'borderWidth': '0.3vh', 'width': '100%', 'color': '#104e8b'})
 espacio = html.Br()
 
-fecha_sel = max(ahora(), fecha_inicial)
+# fecha_sel = max(ahora(), fecha_inicial)
+fecha_sel = max(dia_laboral(), fecha_inicial)
 mes_sel = fecha_sel.month
 
 
@@ -961,18 +963,18 @@ columnDefs_ing = [
     {'field': 'estatus', 'filter': True, 'sortable': True},
 ]
 
-def fecha_visita():
+def fecha_visita(fecha_min):
     return html.Div([
         dbc.Col([
             html.H5('Seleccione una fecha:'),
             dcc.DatePickerSingle(
                 id='sel-fecha',
-                min_date_allowed=fecha_sel,
+                min_date_allowed=datetime.strptime(fecha_min, '%Y-%m-%d').date(),
                 max_date_allowed=fecha_final,
                 disabled_days=feriados,
                 first_day_of_week=1,
                 initial_visible_month=str(mes_sel),
-                date=fecha_sel,
+                date=datetime.strptime(fecha_min, '%Y-%m-%d').date(),
                 display_format='D MMM YYYY',
                 stay_open_on_select=False, # MANTIENE ABIERTO EL SELECTOR DE FECHA
                 show_outside_days=False,
@@ -1091,10 +1093,10 @@ acepta = html.Div([
 ])
 
 # forma
-def form_agrega():
+def form_agrega(fecha_min):
     return dbc.Form([
         linea,
-        fecha_visita(),
+        fecha_visita(fecha_min),
         linea,
         colegio(),
         linea,
@@ -1198,14 +1200,14 @@ def mod_direccion(direccion, comuna):
 
 
 # fecha: cambiar la fecha debiera ser equivalente a crear una nueva visita
-def mod_fecha(datos, fecha):
+def mod_fecha(datos, fecha, fecha_min):
     return html.Div(
         dbc.Row([
             dbc.Col([
                 html.H5(['Fecha:']),
                 dcc.DatePickerSingle(
                     id='mod-fecha',
-                    min_date_allowed=fecha_sel,
+                    min_date_allowed=datetime.strptime(fecha_min, '%Y-%m-%d').date(),
                     max_date_allowed=fecha_final,
                     disabled_days=feriados,
                     first_day_of_week=1,
@@ -1313,7 +1315,7 @@ botones_acepta_modifica = html.Div([
 )
 
 
-def form_modifica_visita(datos, original):
+def form_modifica_visita(datos, original, fecha_min):
     return dbc.Form([
         html.H5(['Modificación de datos de visita'], style={'marginLeft': 15, 'marginTop': 20}),
         linea,
@@ -1323,7 +1325,7 @@ def form_modifica_visita(datos, original):
         linea,
         mod_direccion(original['direccion'], original['comuna_id']),
         linea,
-        mod_fecha(datos, original['fecha']),
+        mod_fecha(datos, original['fecha'], fecha_min),
         linea,
         mod_horario(original['hora_ini'], original['hora_fin'], original['hora_ins']),
         linea,
@@ -1396,6 +1398,7 @@ def form_footer():
 parametros_iniciales = {
     'user': usuario,
     'mes': mes_sel,
+    'fecha_min': fecha_sel,
     'tab_visual': 'tabviz2',
     'tab_edit': 'tab-ed2',
     'rbd_propuesta': None,
@@ -1502,7 +1505,7 @@ def crea_contenido_edicion(tab, datos, datos_prop, param):
         return form_colegios_prop(datos_prop, param['user']), param
     elif tab == 'tab-ed2':
         param['tab_edit'] = tab
-        return form_agrega(), param
+        return form_agrega(param['fecha_min']), param
     elif tab == 'tab-ed3':
         param['tab_edit'] = tab
         return form_modifica(datos, param['user']), param
@@ -1660,7 +1663,7 @@ def agrega_feria(click, param, fecha, rbd, direc, comuna, hr_ini, hr_fin, hr_ins
     
         nuevos_datos = nueva_programada(dic_datos)
     
-        return nuevos_datos, form_agrega(), None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None
+        return nuevos_datos, form_agrega(param['fecha_min']), None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None
 
 
 # agrega colegio a listado de colegios propuestos
@@ -1782,7 +1785,7 @@ def modifica_colegio_programado(click, datos, filas, param):
                 .to_dicts()
             )[0]
             param['id_modifica'] = id_mod
-            return form_modifica_visita(datos, dic_original), param
+            return form_modifica_visita(datos, dic_original, param['fecha_min']), param
         else:
             return dash.no_update, dash.no_update
 
