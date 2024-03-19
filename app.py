@@ -283,6 +283,54 @@ def exporta_programada(datos, mes, usuario):
 
     return output.getvalue()
 
+
+# funciones para la descarga de información detallada de visitas
+
+univ = {str(k): v for k, v in universidades.items()}
+
+def asisten_todas():
+    return (
+        pl.read_database(
+            query = 'SELECT * FROM asisten',
+            connection = engine,
+        )
+        .rename({'programada_id': 'prog_id'})
+        .with_columns(
+            pl.col('asiste').replace({0: 'No', 1: 'Sí'})
+        )
+        .pivot(
+            index='prog_id',
+            columns='organizador_id',
+            values='asiste',
+        )
+        .rename(univ)
+        .select(['prog_id'] + list(universidades.values()))
+    )
+
+orden2 = ['fecha', 'prog_id', 'organizador_id', 'organizador', 'nombre', 'rbd', 'direccion', 'comuna_id', 'hora_ins', 'hora_ini', 'hora_fin',
+          'contacto', 'contacto_tel', 'contacto_mail', 'contacto_cargo', 'orientador', 'orientador_tel', 'orientador_mail', 'estatus', 'observaciones']
+
+def exporta_programada_detalle(mes=0):
+    sql = 'SELECT * FROM programadas'
+    if mes:
+        sql = f'SELECT * FROM programadas WHERE EXTRACT(MONTH FROM fecha) = {mes}'
+
+    output = io.BytesIO()
+    df = (
+        pl.read_database(query = sql, connection = engine)
+        .with_columns(
+            pl.col('comuna_id').replace(comunas)
+        )
+        .select(orden2)
+        .join(asisten_todas(), how='left', on='prog_id')
+        .rename(map_orden_todas)
+        .sort(['Fecha', 'ID'])
+        .drop(['ID', 'Código'])
+        .write_excel(workbook=output, autofilter=False)
+    )
+    return output.getvalue()
+
+
 # función que lee universidades que asisten a visita
 
 def dic_asisten(id_prog):
@@ -1699,8 +1747,12 @@ def arega_propuesta(click, param, rbd):
     prevent_initial_call=True,
 )
 def exporta_visitas_excel(click, datos, param):
-    df = exporta_programada(datos, param['mes'], param['user'])
-    return dcc.send_bytes(df, 'visitas.xlsx')
+    if param['user'] == 0:
+        df = exporta_programada(datos, param['mes'], param['user'])
+        return dcc.send_bytes(df, 'visitas.xlsx')
+    else:
+        df = exporta_programada_detalle(param['mes'])
+        return dcc.send_bytes(df, 'visitas_detalle.xlsx')
 
 
 # exporta colegios propuestos a excel
