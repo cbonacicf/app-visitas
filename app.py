@@ -325,7 +325,7 @@ def exporta_programada_detalle(mes=0):
         .join(asisten_todas(), how='left', on='prog_id')
         .rename(map_orden_todas)
         .sort(['Fecha', 'ID'])
-        .drop(['ID', 'Código'])
+        .drop(['Código'])
         .write_excel(workbook=output, autofilter=False)
     )
     return output.getvalue()
