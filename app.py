@@ -1011,18 +1011,18 @@ columnDefs_ing = [
     {'field': 'estatus', 'filter': True, 'sortable': True},
 ]
 
-def fecha_visita(fecha_min):
+def fecha_visita():
     return html.Div([
         dbc.Col([
             html.H5('Seleccione una fecha:'),
             dcc.DatePickerSingle(
                 id='sel-fecha',
-                min_date_allowed=datetime.strptime(fecha_min, '%Y-%m-%d').date(),
+                min_date_allowed=dia_laboral(),
                 max_date_allowed=fecha_final,
                 disabled_days=feriados,
                 first_day_of_week=1,
                 initial_visible_month=str(mes_sel),
-                date=datetime.strptime(fecha_min, '%Y-%m-%d').date(),
+                date=dia_laboral(),
                 display_format='D MMM YYYY',
                 stay_open_on_select=False, # MANTIENE ABIERTO EL SELECTOR DE FECHA
                 show_outside_days=False,
@@ -1141,10 +1141,10 @@ acepta = html.Div([
 ])
 
 # forma
-def form_agrega(fecha_min):
+def form_agrega():
     return dbc.Form([
         linea,
-        fecha_visita(fecha_min),
+        fecha_visita(),
         linea,
         colegio(),
         linea,
@@ -1248,14 +1248,14 @@ def mod_direccion(direccion, comuna):
 
 
 # fecha: cambiar la fecha debiera ser equivalente a crear una nueva visita
-def mod_fecha(datos, fecha, fecha_min):
+def mod_fecha(datos, fecha):
     return html.Div(
         dbc.Row([
             dbc.Col([
                 html.H5(['Fecha:']),
                 dcc.DatePickerSingle(
                     id='mod-fecha',
-                    min_date_allowed=datetime.strptime(fecha_min, '%Y-%m-%d').date(),
+                    min_date_allowed=dia_laboral(),
                     max_date_allowed=fecha_final,
                     disabled_days=feriados,
                     first_day_of_week=1,
@@ -1363,7 +1363,7 @@ botones_acepta_modifica = html.Div([
 )
 
 
-def form_modifica_visita(datos, original, fecha_min):
+def form_modifica_visita(datos, original):
     return dbc.Form([
         html.H5(['Modificación de datos de visita'], style={'marginLeft': 15, 'marginTop': 20}),
         linea,
@@ -1373,7 +1373,7 @@ def form_modifica_visita(datos, original, fecha_min):
         linea,
         mod_direccion(original['direccion'], original['comuna_id']),
         linea,
-        mod_fecha(datos, original['fecha'], fecha_min),
+        mod_fecha(datos, original['fecha']),
         linea,
         mod_horario(original['hora_ini'], original['hora_fin'], original['hora_ins']),
         linea,
@@ -1446,7 +1446,6 @@ def form_footer():
 parametros_iniciales = {
     'user': usuario,
     'mes': mes_sel,
-    'fecha_min': fecha_sel,
     'tab_visual': 'tabviz2',
     'tab_edit': 'tab-ed2',
     'rbd_propuesta': None,
@@ -1553,7 +1552,7 @@ def crea_contenido_edicion(tab, datos, datos_prop, param):
         return form_colegios_prop(datos_prop, param['user']), param
     elif tab == 'tab-ed2':
         param['tab_edit'] = tab
-        return form_agrega(param['fecha_min']), param
+        return form_agrega(), param
     elif tab == 'tab-ed3':
         param['tab_edit'] = tab
         return form_modifica(datos, param['user']), param
@@ -1711,7 +1710,7 @@ def agrega_feria(click, param, fecha, rbd, direc, comuna, hr_ini, hr_fin, hr_ins
     
         nuevos_datos = nueva_programada(dic_datos)
     
-        return nuevos_datos, form_agrega(param['fecha_min']), None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None
+        return nuevos_datos, form_agrega(), None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None
 
 
 # agrega colegio a listado de colegios propuestos
@@ -1837,7 +1836,7 @@ def modifica_colegio_programado(click, datos, filas, param):
                 .to_dicts()
             )[0]
             param['id_modifica'] = id_mod
-            return form_modifica_visita(datos, dic_original, param['fecha_min']), param
+            return form_modifica_visita(datos, dic_original), param
         else:
             return dash.no_update, dash.no_update
 
