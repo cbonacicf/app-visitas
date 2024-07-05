@@ -193,7 +193,7 @@ actualiza = {
     'hora_ins': pl.Utf8,
 }
 
-schema_programada_lectura = schema_programada.copy()
+schema_programada_lectura = schema_programada[0].copy()
 schema_programada_lectura.update(actualiza)
 
 orden = ['prog_id', 'fecha', 'rbd', 'nombre', 'organizador_id', 'organizador', 'estatus']
