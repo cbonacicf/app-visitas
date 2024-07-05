@@ -5,7 +5,7 @@ import os
 import io
 import psycopg2
 
-from sqlalchemy import create_engine, URL, text
+from sqlalchemy import create_engine, URL
 from sqlalchemy.orm import Session
 from sqlalchemy.ext.automap import automap_base
 from sqlalchemy.pool import NullPool
@@ -182,36 +182,6 @@ def convierte_hora(hora):
 def opciones(dic):
     return [{'label': v, 'value': k} for k, v in dic.items()]
 
-
-# MODIFICACIONES PARA RESTRINGIR CANTIDAD DE FERIAS POR DÍA
-
-# función que crea lista de fechas bloqueadas (local)
-def bloqueados_local():
-    return list(
-        pl.DataFrame(programadas)
-        .group_by('fecha')
-        .agg(
-            pl.count('prog_id').alias('cantidad')
-        )
-        .filter(pl.col('cantidad') >= 3)
-        .sort('fecha')
-        .get_column('fecha')
-    )
-
-# función que verifica fechas bloqueadas (base)
-def verifica_bloqueados():
-    sql = text("SELECT * FROM bloqueados")
-    with Session(engine) as session:
-        resultados = session.execute(sql).all()
-    return [item[0] for item in resultados]
-
-def chk_bloqueado(fecha, fn, excluye=None):
-    bloqueados = fn()
-    if excluye in bloqueados:
-        bloqueados.remove(excluye)
-    return (fecha in bloqueados)
-
-# =================
 
 #### Programadas
 # función que crea datos de visualización (insumo: lista de diccionarios) (no lee datos externos)
@@ -1167,23 +1137,8 @@ def estatus():
 
 
 acepta = html.Div([
-    html.Button('Agregar visita', id='ag-visita', n_clicks=0, className='btn btn-outline-primary', style={'width': '16%', 'marginLeft': 15},
-                 disabled=chk_bloqueado(dia_laboral(), bloqueados_local)),
+    html.Button('Agregar visita', id='ag-visita', n_clicks=0, className='btn btn-outline-primary', style={'width': '16%', 'marginLeft': 15}),
 ])
-
-# modal que informa que fecha no está disponible
-fecha_no_disponible = html.Div(
-    dbc.Modal(
-        [
-            dbc.ModalHeader(html.H4('No es posible agregar visita')),
-            dbc.ModalBody(html.Div('La fecha escogida ya no está disponible para agregar una nueva visita. Algún otro usuario la ocupó en el intertanto.')),
-            dbc.ModalFooter(dbc.Button('Cerrar', id='cerrar-fecha-no-disponible')),
-        ],
-        id='modal-fecha-no-disponible',
-        size='lg',
-        centered=True,
-    ),
-)
 
 # forma
 def form_agrega():
@@ -1202,8 +1157,7 @@ def form_agrega():
         estatus(),
         linea,
         acepta,
-        linea,
-        fecha_no_disponible,
+        linea
     ], style={'marginTop': 0, 'padding': '10px'})
 
 
@@ -1408,19 +1362,6 @@ botones_acepta_modifica = html.Div([
     ], style={'marginTop': 10}
 )
 
-# modal que informa que fecha no está disponible
-fecha_no_disponible2 = html.Div(
-    dbc.Modal(
-        [
-            dbc.ModalHeader(html.H4('No es posible agregar visita')),
-            dbc.ModalBody(html.Div('La fecha escogida ya no está disponible para agregar una nueva visita. Algún otro usuario la ocupó en el intertanto.')),
-            dbc.ModalFooter(dbc.Button('Cerrar', id='cerrar-fecha-no-disponible2')),
-        ],
-        id='modal-fecha-no-disponible2',
-        size='lg',
-        centered=True,
-    )
-)
 
 def form_modifica_visita(datos, original):
     return dbc.Form([
@@ -1442,7 +1383,6 @@ def form_modifica_visita(datos, original):
         mod_observaciones(original['observaciones']),
         linea,
         botones_acepta_modifica,
-        fecha_no_disponible2,
     ])
 
 
@@ -1506,7 +1446,6 @@ def form_footer():
 parametros_iniciales = {
     'user': usuario,
     'mes': -1,
-    'fecha_ori': fecha_inicial,
     'tab_visual': 'tabviz2',
     'tab_edit': 'tab-ed2',
     'rbd_propuesta': None,
@@ -1699,93 +1638,82 @@ def completa_rbd_y_nombre2(rbd, nombre, click, param):
         param['rbd_propuesta'] = None
         return None, None, param
 
-# ====================================================================
 
 # añade visita a base de datos / faltan observaciones
-@app.callback(
-    Output('modal-fecha-no-disponible', 'is_open'),  # modal con advertencia que no es posible agregar visita
-    Output('datos-programadas', 'data'),
-    Output('contenido-edicion', 'children'),
-    Output('sel-rbd', 'value'),
-    Output('sel-nombre', 'value'),
-    Output('id-direccion', 'value'),
-    Output('id-comuna', 'value'),
-    Output('hr-inicio', 'value'),
-    Output('hr-termino', 'value'),
-    Output('hr-instala', 'value'),
-    Output('contacto-nom', 'value'),
-    Output('contacto-cel', 'value'),
-    Output('contacto-mail', 'value'),
-    Output('contacto-cargo', 'value'),
-    Output('orienta-nom', 'value'),
-    Output('orienta-cel', 'value'),
-    Output('orienta-mail', 'value'),
-    Output('def-estatus', 'value'),
-    Output('obs-texto', 'value'),
-
-    Input('ag-visita', 'n_clicks'),
-    Input('cerrar-fecha-no-disponible', 'n_clicks'),  # botón que cierra modal
-
-    State('parametros', 'data'),    # id usuario
-    State('sel-fecha', 'date'),     # fecha
-    State('sel-rbd', 'value'),      # rbd
-    State('id-direccion', 'value'), # dirección
-    State('id-comuna', 'value'),    # comuna
-    State('hr-inicio', 'value'),    # inicio
-    State('hr-termino', 'value'),   # término
-    State('hr-instala', 'value'),   # instalación
-    State('contacto-nom', 'value'), # contacto
-    State('contacto-cel', 'value'),
-    State('contacto-mail', 'value'),
-    State('contacto-cargo', 'value'),
-    State('orienta-nom', 'value'),  # orientador
-    State('orienta-cel', 'value'),
-    State('orienta-mail', 'value'),
-    State('def-estatus', 'value'),  # estatus
-    State('obs-texto', 'value'),    # observaciones
+@app.callback([
+        Output('datos-programadas', 'data'),
+        Output('contenido-edicion', 'children'),
+        Output('sel-rbd', 'value'),
+        Output('sel-nombre', 'value'),
+        Output('id-direccion', 'value'),
+        Output('id-comuna', 'value'),
+        Output('hr-inicio', 'value'),
+        Output('hr-termino', 'value'),
+        Output('hr-instala', 'value'),
+        Output('contacto-nom', 'value'),
+        Output('contacto-cel', 'value'),
+        Output('contacto-mail', 'value'),
+        Output('contacto-cargo', 'value'),
+        Output('orienta-nom', 'value'),
+        Output('orienta-cel', 'value'),
+        Output('orienta-mail', 'value'),
+        Output('def-estatus', 'value'),
+        Output('obs-texto', 'value'),
+    ], [
+        Input('ag-visita', 'n_clicks')
+    ], [
+        State('parametros', 'data'),    # id usuario
+        State('sel-fecha', 'date'),     # fecha
+        State('sel-rbd', 'value'),      # rbd
+        State('id-direccion', 'value'), # dirección
+        State('id-comuna', 'value'),    # comuna
+        State('hr-inicio', 'value'),    # inicio
+        State('hr-termino', 'value'),   # término
+        State('hr-instala', 'value'),   # instalación
+        State('contacto-nom', 'value'), # contacto
+        State('contacto-cel', 'value'),
+        State('contacto-mail', 'value'),
+        State('contacto-cargo', 'value'),
+        State('orienta-nom', 'value'),  # orientador
+        State('orienta-cel', 'value'),
+        State('orienta-mail', 'value'),
+        State('def-estatus', 'value'),  # estatus
+        State('obs-texto', 'value'),    # observaciones
+    ],
     prevent_initial_call=True,
 )
-def agrega_feria(click, click2, param, fecha_str, rbd, direc, comuna, hr_ini, hr_fin, hr_ins, ct, ct_tel, ct_mail, ct_cargo, ori, ori_tel, ori_mail, est, obs):
+def agrega_feria(click, param, fecha, rbd, direc, comuna, hr_ini, hr_fin, hr_ins, ct, ct_tel, ct_mail, ct_cargo, ori, ori_tel, ori_mail, est, obs):
+
     if click == 0:
         raise PreventUpdate
     else:
-        disparador = dash.ctx.triggered_id
-    
-        if disparador == 'cerrar-fecha-no-disponible':
-            return False, dash.no_update, dash.no_update, *[dash.no_update]*16
-    
-        elif disparador == 'ag-visita':
-            fecha = datetime.strptime(fecha_str, '%Y-%m-%d').date()       
-            if chk_bloqueado(fecha, verifica_bloqueados):
-                return True, dash.no_update, dash.no_update, *[dash.no_update]*16
-            else:
-                dic_datos = {}
-        
-                dic_datos['organizador_id'] = param['user']
-                dic_datos['organizador'] = universidades[param['user']]
-                dic_datos['fecha'] = fecha
-                dic_datos['rbd'] = rbd
-                dic_datos['nombre'] = colegios[rbd]
-                dic_datos['direccion'] = direc
-                dic_datos['comuna_id'] = comuna
-                dic_datos['hora_ini'] = convierte_hora(hr_ini)
-                dic_datos['hora_fin'] = convierte_hora(hr_fin)
-                dic_datos['hora_ins'] = convierte_hora(hr_ins)
-                dic_datos['contacto'] = ct
-                dic_datos['contacto_tel'] = ct_tel
-                dic_datos['contacto_mail'] = ct_mail
-                dic_datos['contacto_cargo'] = ct_cargo
-                dic_datos['orientador'] = ori
-                dic_datos['orientador_tel'] = ori_tel
-                dic_datos['orientador_mail'] = ori_mail
-                dic_datos['estatus'] = est
-                dic_datos['observaciones'] = obs
-            
-                nuevos_datos = nueva_programada(dic_datos)
-            
-                return False, nuevos_datos, form_agrega(), *[None]*16
+        dic_datos = {}
+        dic_observaciones = {}
 
-# ====================================================================
+        dic_datos['organizador_id'] = param['user']
+        dic_datos['organizador'] = universidades[param['user']]
+        dic_datos['fecha'] = datetime.strptime(fecha, '%Y-%m-%d')
+        dic_datos['rbd'] = rbd
+        dic_datos['nombre'] = colegios[rbd]
+        dic_datos['direccion'] = direc
+        dic_datos['comuna_id'] = comuna
+        dic_datos['hora_ini'] = convierte_hora(hr_ini)
+        dic_datos['hora_fin'] = convierte_hora(hr_fin)
+        dic_datos['hora_ins'] = convierte_hora(hr_ins)
+        dic_datos['contacto'] = ct
+        dic_datos['contacto_tel'] = ct_tel
+        dic_datos['contacto_mail'] = ct_mail
+        dic_datos['contacto_cargo'] = ct_cargo
+        dic_datos['orientador'] = ori
+        dic_datos['orientador_tel'] = ori_tel
+        dic_datos['orientador_mail'] = ori_mail
+        dic_datos['estatus'] = est
+        dic_datos['observaciones'] = obs
+    
+        nuevos_datos = nueva_programada(dic_datos)
+    
+        return nuevos_datos, form_agrega(), None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None
+
 
 # agrega colegio a listado de colegios propuestos
 @app.callback(
@@ -1939,18 +1867,13 @@ def vuelve_sin_modificacion(click, datos, param):
 def mod_ferias_programadas_fecha(fecha, datos):
     return programadas_fecha(datos, datetime.strptime(fecha, '%Y-%m-%d').date())
 
-# ====================================================================
 
 # aplicar cambios en ventana de modificaciones
 @app.callback(
-    Output('modal-fecha-no-disponible2', 'is_open'),
-    Output('datos-programadas', 'data'),
-    Output('contenido-edicion', 'children'),
-    Output('parametros', 'data'),
-
+    Output('datos-programadas', 'data'), # datos
+    Output('contenido-edicion', 'children'), # cambia forma: form_modifica
+    Output('parametros', 'data'), # actualiza id_modifica a None
     Input('btn-mod-aplica', 'n_clicks'),
-    Input('cerrar-fecha-no-disponible2', 'n_clicks'),
-
     State('datos-programadas', 'data'),
     State('parametros', 'data'),
     State('mod-id-direccion', 'value'),
@@ -1970,50 +1893,40 @@ def mod_ferias_programadas_fecha(fecha, datos):
     State('mod-obs-texto', 'value'),
     prevent_initial_call=True,
 )
-def aplica_cambios(click, click2, datos, param, direc, comuna, fecha_str, hr_ini, hr_fin, hr_ins, ct, ct_tel, ct_mail, ct_cargo, ori, ori_tel, ori_mail, est, obs):
+def aplica_cambios(click, datos, param, direc, comuna, fecha, hr_ini, hr_fin, hr_ins, ct, ct_tel, ct_mail, ct_cargo, ori, ori_tel, ori_mail, est, obs):
     if click == 0:
         raise PreventUpdate
     else:
-        disparador = dash.ctx.triggered_id
-    
-        if disparador == 'cerrar-fecha-no-disponible2':
-            return False, dash.no_update, dash.no_update, dash.no_update
-    
-        elif disparador == 'btn-mod-aplica':
-            nueva_fecha = datetime.strptime(fecha_str, '%Y-%m-%d').date()       
-            fecha_original = datetime.strptime(param['fecha_ori'], '%Y-%m-%d').date()
-            if chk_bloqueado(nueva_fecha, verifica_bloqueados, excluye=fecha_original):
-                return True, dash.no_update, dash.no_update, dash.no_update
-            else:
-                id_visita = param['id_modifica']
-                dic_original = next(item for item in datos if item['prog_id'] == id_visita)
-        
-                cambia_fecha = False
-                if fecha_original != nueva_fecha:
-                    cambia_fecha = True
-        
-                dic_original['fecha'] = nueva_fecha
-                dic_original['direccion'] = direc
-                dic_original['comuna_id'] = comuna
-                dic_original['hora_ini'] = convierte_hora(hr_ini)
-                dic_original['hora_fin'] = convierte_hora(hr_fin)
-                dic_original['hora_ins'] = convierte_hora(hr_ins)
-                dic_original['contacto'] = ct
-                dic_original['contacto_tel'] = ct_tel
-                dic_original['contacto_mail'] = ct_mail
-                dic_original['contacto_cargo'] = ct_cargo
-                dic_original['orientador'] = ori
-                dic_original['orientador_tel'] = ori_tel
-                dic_original['orientador_mail'] = ori_mail
-                dic_original['estatus'] = est
-                dic_original['observaciones'] = obs
-        
-                nuevos_datos = modifica_programada(id_visita, dic_original, cambia_fecha=cambia_fecha, consume=True)
-                param['id_modifica'] = None
-            
-                return False, nuevos_datos, form_modifica(nuevos_datos, param['user']), param
+        id_visita = param['id_modifica']
+        dic_original = next(item for item in datos if item['prog_id'] == id_visita)
+        dic_original['fecha'] = datetime.strptime(dic_original['fecha'], '%Y-%m-%d')
+        nueva_fecha = datetime.strptime(fecha, '%Y-%m-%d')
 
-# ====================================================================
+        cambia_fecha = False
+        if dic_original['fecha'] != nueva_fecha:
+            cambia_fecha = True
+
+        dic_original['fecha'] = nueva_fecha
+        dic_original['direccion'] = direc
+        dic_original['comuna_id'] = comuna
+        dic_original['hora_ini'] = convierte_hora(hr_ini)
+        dic_original['hora_fin'] = convierte_hora(hr_fin)
+        dic_original['hora_ins'] = convierte_hora(hr_ins)
+        dic_original['contacto'] = ct
+        dic_original['contacto_tel'] = ct_tel
+        dic_original['contacto_mail'] = ct_mail
+        dic_original['contacto_cargo'] = ct_cargo
+        dic_original['orientador'] = ori
+        dic_original['orientador_tel'] = ori_tel
+        dic_original['orientador_mail'] = ori_mail
+        dic_original['estatus'] = est
+        dic_original['observaciones'] = obs
+
+        nuevos_datos = modifica_programada(id_visita, dic_original, cambia_fecha=cambia_fecha, consume=True)
+        param['id_modifica'] = None
+    
+        return nuevos_datos, form_modifica(nuevos_datos, param['user']), param
+
 
 # abre modal con la información de la visita programada
 @app.callback(
@@ -2081,43 +1994,6 @@ def descarga_reporte_pdf(_, filas, datos):
     asisten = def_asisten(id_rep)
     doc = exporta_reporte(visita, asisten)
     return dcc.send_bytes(doc, f"reporte_{str(visita['rbd'])}.pdf")
-
-
-# restringe visibilidad de boton que agrega visita
-@app.callback(
-    Output('ag-visita', 'disabled'),
-    Input('sel-fecha', 'date')
-)
-def evalua_fecha_bloqueada(fecha_str):
-    fecha = datetime.strptime(fecha_str, '%Y-%m-%d').date()
-    return chk_bloqueado(fecha, bloqueados_local)
-
-
-# restringe visibilidad de boton que modifica visita
-@app.callback(
-    Output('btn-mod-aplica', 'disabled'),
-    Input('mod-fecha', 'date'),
-    State('parametros', 'data'),
-)
-def evalua_fecha_bloqueada_2(fecha_str, param):
-    fecha_original = datetime.strptime(param['fecha_ori'], '%Y-%m-%d').date()
-    fecha = datetime.strptime(fecha_str, '%Y-%m-%d').date()
-    return chk_bloqueado(fecha, bloqueados_local, excluye=fecha_original)
-
-
-# rescata fecha de visita a modificar
-@app.callback(
-    Output('parametros', 'data'),
-    Input('ferias-prg-usr', 'selectedRows'),    
-    State('parametros', 'data'),
-    prevent_initial_call=True,
-)
-def guarda_fecha_original(filas, param):
-    if filas == []:
-        raise PreventUpdate
-    else:
-        param['fecha_ori'] = datetime.strptime(filas[0]['fecha'], '%Y-%m-%d').date()
-        return param
 
 
 # ejecución de la aplicación
