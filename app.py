@@ -750,7 +750,7 @@ def botones_mes(mes):
             dcc.RadioItems(
                 id = 'selec-mes',
                 options = op_meses,
-                value = mes if mes in list(op_meses.keys()) else 0,
+                value = mes if mes in list(range(3, 12)) else 0,
                 style = {'textAlign': 'left', 'width': '50%', 'display': 'flex', 'marginTop': '3px'},
                 labelStyle = {'display': 'inline-block', 'fontSize': '14px', 'fontWeight': 'normal'},
                 inputStyle = {'marginRight': '5px', 'marginLeft': '20px'},
