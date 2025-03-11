@@ -23,8 +23,8 @@ from reportlab.lib.colors import HexColor
 ### Parámetros
 # período de duración de las visitas
 
-fecha_inicial = date(2024, 3, 1)
-fecha_final = date(2024, 11, 30)
+fecha_inicial = date(2025, 3, 1)
+fecha_final = date(2025, 11, 30)
 
 # inicialización de usuario
 
@@ -33,18 +33,17 @@ usuario = 0
 ### Conexión
 # parámetros de conexión
 
-objeto_url = URL.create(
-    'postgresql+psycopg2',
-    username = os.environ['PGUSER'],
-    password = os.environ['PGPASSWORD'],
-    host = os.environ['PGHOST'],
-    port = os.environ['PGPORT'],
-    database = os.environ['PGDATABASE'],
-)
+#objeto_url = URL.create(  # actualizar: eliminar
+#    'postgresql+psycopg2',
+#    username = os.environ['PGUSER'],
+#    password = os.environ['PGPASSWORD'],
+#    host = os.environ['PGHOST'],
+#    port = os.environ['PGPORT'],
+#    database = os.environ['PGDATABASE'],
+#)
 
-# string_conn = os.environ['DATABASE_PRIVATE_URL'] + '?connect_timeout=300'
-
-engine = create_engine(objeto_url, pool_pre_ping=True, poolclass=NullPool)
+# engine = create_engine(objeto_url, pool_pre_ping=True, poolclass=NullPool)  # actualizar: os.environ['DATABASE_PRIVATE_URL']
+engine = create_engine(os.environ['DATABASE_PRIVATE_URL'], pool_pre_ping=True, poolclass=NullPool)
 
 # creación de clases de las bases de datos
 
@@ -102,7 +101,7 @@ colegios_comuna = dict(
 # crea listado con los feriados y fines de semana
 
 feriados = (
-    pl.read_parquet('./data/feriados2024.parquet')
+    pl.read_parquet('./data/feriados2025.parquet')
     .to_series()
     .to_list()
 )
@@ -482,7 +481,7 @@ def exporta_reporte(visita, asisten):
 
     canvas.setFont('Helvetica', 24)
     canvas.setFillColor(HexColor('#1b81e5'))
-    canvas.drawCentredString(306, top, 'Programa de Visitas a Colegios 2024')
+    canvas.drawCentredString(306, top, 'Programa de Visitas a Colegios 2025')
     top -= (step + 14)
     
     canvas.setFont('Helvetica', 16)
@@ -750,7 +749,7 @@ def botones_mes(mes):
             dcc.RadioItems(
                 id = 'selec-mes',
                 options = op_meses,
-                value = mes if mes in list(range(3, 12)) else 0,
+                value = mes,
                 style = {'textAlign': 'left', 'width': '50%', 'display': 'flex', 'marginTop': '3px'},
                 labelStyle = {'display': 'inline-block', 'fontSize': '14px', 'fontWeight': 'normal'},
                 inputStyle = {'marginRight': '5px', 'marginLeft': '20px'},
@@ -830,7 +829,7 @@ fto_hora = lambda x: x[:-3] + ' hrs.' if x != '00:00:00' else ''
 fto_blanco = lambda x: '' if x == None else x
 
 formato_items = {
-    'fecha': lambda x: f'{datetime.strptime(x, "%Y-%m-%d").date():%A, %d %B %Y}',
+    'fecha': lambda x: f'{datetime.strptime(x, "%Y-%m-%d").date():%A, %d %B %Y}',  # actualizar: evaluar traducir aquí
     'direccion': fto_blanco,
     'comuna_id': lambda x: comunas[x],
     'hora_ins': fto_hora,
@@ -1490,7 +1489,7 @@ def form_ingreso(usuario):
 def form_footer():
     return html.Div(
         html.Footer(
-            ['2024:  Corporación de Universidades Privadas'],
+            ['2025:  Corporación de Universidades Privadas'],
             style={
                 'display': 'flex',
                 'background': color,
