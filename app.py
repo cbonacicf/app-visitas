@@ -33,17 +33,17 @@ usuario = 0
 ### Conexión
 # parámetros de conexión
 
-#objeto_url = URL.create(  # actualizar: eliminar
-#    'postgresql+psycopg2',
-#    username = os.environ['PGUSER'],
-#    password = os.environ['PGPASSWORD'],
-#    host = os.environ['PGHOST'],
-#    port = os.environ['PGPORT'],
-#    database = os.environ['PGDATABASE'],
-#)
+objeto_url = URL.create(
+    'postgresql+psycopg2',
+    username = os.environ['PGUSER'],
+    password = os.environ['PGPASSWORD'],
+    host = os.environ['PGHOST'],
+    port = os.environ['PGPORT'],
+    database = os.environ['PGDATABASE'],
+)
 
-# engine = create_engine(objeto_url, pool_pre_ping=True, poolclass=NullPool)  # actualizar: os.environ['DATABASE_PRIVATE_URL']
-engine = create_engine(os.environ['DATABASE_PRIVATE_URL'], pool_pre_ping=True, poolclass=NullPool)
+engine = create_engine(objeto_url, pool_pre_ping=True, poolclass=NullPool)  # actualizar: os.environ['DATABASE_PRIVATE_URL']
+# engine = create_engine(os.environ['DATABASE_PRIVATE_URL'], pool_pre_ping=True, poolclass=NullPool)
 
 # creación de clases de las bases de datos
 
