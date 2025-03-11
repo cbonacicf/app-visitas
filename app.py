@@ -186,16 +186,19 @@ def opciones(dic):
 
 # función que crea lista de fechas bloqueadas (local)
 def bloqueados_local():
-    return list(
-        pl.DataFrame(programadas)
-        .group_by('fecha')
-        .agg(
-            pl.count('prog_id').alias('cantidad')
+    if programadas == []:
+        return []
+    else:
+        return list(
+            pl.DataFrame(programadas)
+            .group_by('fecha')
+            .agg(
+                pl.count('prog_id').alias('cantidad')
+            )
+            .filter(pl.col('cantidad') >= 3)
+            .sort('fecha')
+            .get_column('fecha')
         )
-        .filter(pl.col('cantidad') >= 3)
-        .sort('fecha')
-        .get_column('fecha')
-    )
 
 # función que verifica fechas bloqueadas (base)
 def verifica_bloqueados():
