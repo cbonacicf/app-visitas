@@ -83,6 +83,36 @@ def lectura(db, consume=False):
 programadas, schema_programada = lectura('programadas')
 propuestas, schema_propuesta = lectura('propuestas')
 
+schema_programada = pl.Schema({
+    'prog_id': pl.Int16,
+    'organizador_id': pl.Int8,
+    'organizador': pl.Utf8,
+    'fecha': pl.Date,
+    'rbd': pl.Int32,
+    'nombre': pl.Utf8,
+    'direccion': pl.Utf8,
+    'comuna_id': pl.Int16,
+    'hora_ini': pl.Time,
+    'hora_fin': pl.Time,
+    'hora_ins': pl.Time,
+    'contacto': pl.Utf8,
+    'contacto_tel': pl.Utf8,
+    'contacto_mail': pl.Utf8,
+    'contacto_cargo': pl.Utf8,
+    'orientador': pl.Utf8,
+    'orientador_tel': pl.Utf8,
+    'orientador_mail': pl.Utf8,
+    'estatus': pl.Utf8,
+    'observaciones': pl.Utf8,
+})
+
+schema_propuesta = pl.Schema({
+    'prop_id': pl.Int16,
+    'organizador_id': pl.Int8,
+    'organizador': pl.Utf8,
+    'rbd': pl.Int32,
+    'nombre': pl.Utf8,
+})
 
 # crea diccionario rbd->nombre y rbd->codigo_comuna
 
@@ -1785,7 +1815,7 @@ def agrega_feria(click, click2, param, fecha_str, rbd, direc, comuna, hr_ini, hr
             
                 nuevos_datos = nueva_programada(dic_datos)
             
-                return False, nuevos_datos, form_agrega(), *[None]*16
+                return False, nuevos_datos, form_agrega(), *[None]*15, ''
 
 # ====================================================================
 
