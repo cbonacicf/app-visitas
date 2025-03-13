@@ -1,4 +1,4 @@
-polars
+polars==0.20.31
 pyarrow
 pray
 pytz
@@ -8,3 +8,6 @@ dash_ag_grid
 dash_bootstrap_components
 dash_extensions
 XlsxWriter
+sqlalchemy
+psycopg2
+reportlab

@@ -1,7 +1,3 @@
-entorno.py
-.venv
 __pycache__
 .DS_Store
-.env
-requirements_bak.txt
-commit.txt
+app_local.py

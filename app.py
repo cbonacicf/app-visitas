@@ -33,17 +33,17 @@ usuario = 0
 ### Conexión
 # parámetros de conexión
 
-#objeto_url = URL.create(  # actualizar: eliminar
-#    'postgresql+psycopg2',
-#    username = os.environ['PGUSER'],
-#    password = os.environ['PGPASSWORD'],
-#    host = os.environ['PGHOST'],
-#    port = os.environ['PGPORT'],
-#    database = os.environ['PGDATABASE'],
-#)
+objeto_url = URL.create(
+    'postgresql+psycopg2',
+    username = os.environ['PGUSER'],
+    password = os.environ['PGPASSWORD'],
+    host = os.environ['PGHOST'],
+    port = os.environ['PGPORT'],
+    database = os.environ['PGDATABASE'],
+)
 
-# engine = create_engine(objeto_url, pool_pre_ping=True, poolclass=NullPool)  # actualizar: os.environ['DATABASE_PRIVATE_URL']
-engine = create_engine(os.environ['DATABASE_PRIVATE_URL'], pool_pre_ping=True, poolclass=NullPool)
+engine = create_engine(objeto_url, pool_pre_ping=True, poolclass=NullPool)  # actualizar: os.environ['DATABASE_PRIVATE_URL']
+# engine = create_engine(os.environ['DATABASE_PRIVATE_URL'], pool_pre_ping=True, poolclass=NullPool)
 
 # creación de clases de las bases de datos
 
@@ -186,16 +186,19 @@ def opciones(dic):
 
 # función que crea lista de fechas bloqueadas (local)
 def bloqueados_local():
-    return list(
-        pl.DataFrame(programadas)
-        .group_by('fecha')
-        .agg(
-            pl.count('prog_id').alias('cantidad')
+    if programadas == []:
+        return []
+    else:
+        return list(
+            pl.DataFrame(programadas)
+            .group_by('fecha')
+            .agg(
+                pl.count('prog_id').alias('cantidad')
+            )
+            .filter(pl.col('cantidad') >= 3)
+            .sort('fecha')
+            .get_column('fecha')
         )
-        .filter(pl.col('cantidad') >= 3)
-        .sort('fecha')
-        .get_column('fecha')
-    )
 
 # función que verifica fechas bloqueadas (base)
 def verifica_bloqueados():
