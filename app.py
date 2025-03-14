@@ -245,6 +245,42 @@ def chk_bloqueado(fecha, fn, excluye=None):
 
 # =================
 
+# traduce a español
+
+dias_es = {
+    'Monday': 'Lunes',
+    'Tuesday': 'Martes',
+    'Wednesday': 'Miércoles',
+    'Thursday': 'Jueves',
+    'Friday': 'Viernes',
+    'Saturday': 'Sábado',
+    'Sunday': 'Domingo',
+}
+
+meses_es = {
+    'January': 'de Enero de',
+    'February': 'de Febrero de',
+    'March': 'de Marzo de',
+    'April': 'de Abril de',
+    'May': 'de Mayo de',
+    'June': 'de Junio de',
+    'July': 'de Julio de',
+    'August': 'de Agosto de',
+    'September': 'de Septiembre de',
+    'October': 'de Octubre de',
+    'November': 'de Noviembre de',
+    'December': 'de Diciembre de',
+}
+
+items_es = dias_es | meses_es
+tuplas_es = items_es.items()
+
+def convierte_esp(fecha):
+    for ingles, espanol in tuplas_es:
+        fecha = fecha.replace(ingles, espanol)
+    return fecha
+
+
 #### Programadas
 # función que crea datos de visualización (insumo: lista de diccionarios) (no lee datos externos)
 
@@ -862,7 +898,7 @@ fto_hora = lambda x: x[:-3] + ' hrs.' if x != '00:00:00' else ''
 fto_blanco = lambda x: '' if x == None else x
 
 formato_items = {
-    'fecha': lambda x: f'{datetime.strptime(x, "%Y-%m-%d").date():%A, %d %B %Y}',  # actualizar: evaluar traducir aquí
+    'fecha': lambda x: convierte_esp(f'{datetime.strptime(x, "%Y-%m-%d").date():%A, %d %B %Y}'),
     'direccion': fto_blanco,
     'comuna_id': lambda x: comunas[x],
     'hora_ins': fto_hora,
