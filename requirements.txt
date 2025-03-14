@@ -1,4 +1,4 @@
-polars==0.20.31
+polars
 pyarrow
 pray
 pytz

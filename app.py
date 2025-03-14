@@ -1,4 +1,4 @@
-import polars as pl
+import polars as pl # 0.20.31
 from datetime import date, time, datetime, timedelta
 import pytz
 import os
@@ -334,7 +334,7 @@ def exporta_programada(datos, mes, usuario):
         pl.DataFrame(datos, schema=schema_programada_lectura)
         .with_columns([
             pl.col('fecha').str.strptime(pl.Date, '%Y-%m-%d'),
-            pl.col('comuna_id').replace(comunas),
+            pl.col('comuna_id').replace_strict(comunas),
         ])
         .select({0: orden}.get(usuario, list(map_orden_todas.keys())))
         .rename({0: map_orden}.get(usuario, map_orden_todas))
@@ -358,7 +358,7 @@ def asisten_todas():
         )
         .rename({'programada_id': 'prog_id'})
         .with_columns(
-            pl.col('asiste').replace({0: 'No', 1: 'Sí'})
+            pl.col('asiste').replace_strict({0: 'No', 1: 'Sí'})
         )
         .pivot(
             index='prog_id',
@@ -381,7 +381,7 @@ def exporta_programada_detalle(mes=0):
     df = (
         pl.read_database(query = sql, connection = engine)
         .with_columns(
-            pl.col('comuna_id').replace(comunas)
+            pl.col('comuna_id').replace_strict(comunas)
         )
         .select(orden2)
         .join(asisten_todas(), how='left', on='prog_id')
