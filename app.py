@@ -2190,4 +2190,4 @@ def guarda_fecha_original(filas, param):
 
 # ejecución de la aplicación
 if __name__ == '__main__':
-    app.run_server(debug=False)  #True, mode='inline', port=8050)
+    app.run(debug=False)  #True, mode='inline', port=8050)
