@@ -232,7 +232,8 @@ def bloqueados_local():
 
 # función que verifica fechas bloqueadas (base)
 def verifica_bloqueados():
-    sql = text("SELECT * FROM bloqueados")
+#    sql = text("SELECT * FROM bloqueados")
+    sql = text("SELECT * FROM bloqueadas()")
     with Session(engine) as session:
         resultados = session.execute(sql).all()
     return [item[0] for item in resultados]
@@ -1236,7 +1237,8 @@ def estatus():
 
 acepta = html.Div([
     html.Button('Agregar visita', id='ag-visita', n_clicks=0, className='btn btn-outline-primary', style={'width': '16%', 'marginLeft': 15},
-                 disabled=chk_bloqueado(dia_laboral(), bloqueados_local)),
+#                 disabled=chk_bloqueado(dia_laboral(), bloqueados_local)),
+                 disabled=chk_bloqueado(dia_laboral(), verifica_bloqueados)),
 ])
 
 # modal que informa que fecha no está disponible
@@ -2158,7 +2160,8 @@ def descarga_reporte_pdf(_, filas, datos):
 )
 def evalua_fecha_bloqueada(fecha_str):
     fecha = datetime.strptime(fecha_str, '%Y-%m-%d').date()
-    return chk_bloqueado(fecha, bloqueados_local)
+#    return chk_bloqueado(fecha, bloqueados_local)
+    return chk_bloqueado(fecha, verifica_bloqueados)
 
 
 # restringe visibilidad de boton que modifica visita
@@ -2170,7 +2173,8 @@ def evalua_fecha_bloqueada(fecha_str):
 def evalua_fecha_bloqueada_2(fecha_str, param):
     fecha_original = datetime.strptime(param['fecha_ori'], '%Y-%m-%d').date()
     fecha = datetime.strptime(fecha_str, '%Y-%m-%d').date()
-    return chk_bloqueado(fecha, bloqueados_local, excluye=fecha_original)
+#    return chk_bloqueado(fecha, bloqueados_local, excluye=fecha_original)
+    return chk_bloqueado(fecha, verifica_bloqueados, excluye=fecha_original)
 
 
 # rescata fecha de visita a modificar
