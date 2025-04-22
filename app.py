@@ -2185,7 +2185,7 @@ def evalua_fecha_bloqueada_2(fecha_str, param):
     prevent_initial_call=True,
 )
 def guarda_fecha_original(filas, param):
-    if filas == []:
+    if filas == None:
         raise PreventUpdate
     else:
         param['fecha_ori'] = datetime.strptime(filas[0]['fecha'], '%Y-%m-%d').date()
