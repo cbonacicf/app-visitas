@@ -11,3 +11,4 @@ XlsxWriter
 sqlalchemy
 psycopg2
 reportlab
+gunicorn

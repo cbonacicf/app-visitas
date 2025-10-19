@@ -523,7 +523,7 @@ def cambia_asiste(usuario, programada, asiste):
         modifica = session.query(Asiste).filter(Asiste.organizador_id == usuario).filter(Asiste.programada_id == programada).first()
         modifica.asiste = asiste,
         session.commit()
-    
+
 # reporte
 
 orden_reporte = ['organizador', 'nombre', 'rbd', 'fecha', 'direccion', 'comuna_id', 'hora_ins', 'hora_ini', 'hora_fin', 'orientador']
@@ -540,7 +540,7 @@ def def_asisten(id_prog):
         .sort('organizador_id')
         .to_dicts()
     )
-    
+
 def exporta_reporte(visita, asisten):
     output = io.BytesIO()
 
@@ -553,11 +553,11 @@ def exporta_reporte(visita, asisten):
     canvas.setFillColor(HexColor('#1b81e5'))
     canvas.drawCentredString(306, top, 'Programa de Visitas a Colegios 2025')
     top -= (step + 14)
-    
+
     canvas.setFont('Helvetica', 16)
     canvas.drawString((2 * cm), top, 'Antecedentes de la Visita')
     top -= (step + 4)
-    
+
     canvas.setFont('Helvetica', 12)
     canvas.setFillColor(HexColor('#596a6d'))
     for item in orden_reporte:
@@ -565,13 +565,13 @@ def exporta_reporte(visita, asisten):
         canvas.drawString((2.5 * cm)*2.02, top, ':')
         canvas.drawString((2.5 * cm)*2.17, top, f'{formato_items.get(item, lambda x: x)(visita[item])}')
         top -= step
-    
+
     top -= step
     canvas.setFont('Helvetica', 16)
     canvas.setFillColor(HexColor('#1b81e5'))
     canvas.drawString((2 * cm), top, 'Universidades Participantes')
     top -= (step + 4)
-    
+
     canvas.setFont('Helvetica', 12)
     canvas.setFillColor(HexColor('#596a6d'))
     for asiste in asisten:
@@ -678,7 +678,7 @@ def usuario_actual(usuario):
     return html.Div(
         dbc.Row(
             dbc.Col([
-                html.H4([f'Usuario: {usuarios[usuario]}'], style={'textAlign': 'center'}),    
+                html.H4([f'Usuario: {usuarios[usuario]}'], style={'textAlign': 'center'}),
             ], width={'size': 7, 'offset': 2},)
         ),
         style={'marginTop': 5},
@@ -701,7 +701,7 @@ tab_selected_style = {
     'backgroundColor': color,
     'color': 'white',
     'padding': '6px',
-    'fontSize': '20px',    
+    'fontSize': '20px',
 }
 
 custom_tabs_container = {
@@ -778,7 +778,7 @@ def vista_propuestos_gral(datos):
         dag.AgGrid(
             id='viz-col-prop-gral',
             rowData=propuesta_vista(datos),
-            defaultColDef={'resizable': True},    
+            defaultColDef={'resizable': True},
             columnDefs=columnDefs_viz_prop,
             dashGridOptions = {
                 'rowSelection': 'single',
@@ -841,7 +841,7 @@ def grid_programadas(datos, mes):
     return dag.AgGrid(
         id='viz-ferias',
         rowData=programadas_vista(datos, mes),
-        defaultColDef={'resizable': True},    
+        defaultColDef={'resizable': True},
         columnDefs=columnDefs,
         dashGridOptions = {
             'rowSelection': 'single',
@@ -997,12 +997,12 @@ tab2_selected_style = {
     'backgroundColor': color, #'#119DFF',
     'color': 'white',
     'padding': '6px',
-    'fontSize': '18px',    
+    'fontSize': '18px',
 }
 
 # contenido de la pestaña de edición
 
-def contenido_edicion(tab):  
+def contenido_edicion(tab):
     return html.Div([
         html.H4(['Acciones:'], style={'marginLeft': 15, 'marginBottom': 5, 'marginTop': 20}),
         dcc.Tabs(id='tabs-edicion', value=tab, children=[
@@ -1043,7 +1043,7 @@ def viz_colegios_prop(datos, usr):
     return dag.AgGrid(
         id='viz-col-prop',
         rowData=propuesta_vista(datos, usuario=usr),  # función que provee los datos
-        defaultColDef={'resizable': True},    
+        defaultColDef={'resizable': True},
         columnDefs=columnDefs_listado,
         columnSize='sizeToFit',
         dashGridOptions = {
@@ -1127,7 +1127,7 @@ def fecha_visita():
                 show_outside_days=False,
                 persistence=True,
                 persistence_type='memory',
-            )  
+            )
         ], style={'width': '18%', 'display': 'inline-block', 'vertical-align': 'top'}),
         dbc.Col([
             html.H5('Visitas programadas para dicha fecha'),
@@ -1180,7 +1180,7 @@ def direccion():
             dbc.Col([
                 html.H5(['Comuna']),
                 dcc.Dropdown(op_comunas, id='id-comuna', persistence=True, persistence_type='memory', style={'width': '110%'}),
-            ], width=2),        
+            ], width=2),
         ])
     ])
 
@@ -1358,7 +1358,7 @@ def mod_direccion(direccion, comuna):
                 html.H5(['Comuna']),
                 dcc.Dropdown(op_comunas, id='mod-id-comuna', value=comuna, persistence=True, persistence_type='memory', style={'width': '110%'}),
                 html.P(viz_none(comunas[comuna]), style={'color': 'red'}),
-            ], width=2),        
+            ], width=2),
         ])
     ])
 
@@ -1382,7 +1382,7 @@ def mod_fecha(datos, fecha):
                     show_outside_days=False,
                 ),
                 html.P('('+fecha.strftime('%d/%m/%Y')+')', style={'color': 'red'}),
-            ], width=2, align='start'),    
+            ], width=2, align='start'),
             dbc.Col([
                 html.H5('Visitas programadas para dicha fecha'),
                 dag.AgGrid(
@@ -1594,7 +1594,7 @@ app.config.suppress_callback_exceptions = True
 def serve_layout():
     return dbc.Container([
         encabezado,
-        html.Div(usuario_actual(usuario), id='contenido-usuario'),    
+        html.Div(usuario_actual(usuario), id='contenido-usuario'),
         tabs_inicio(usuario),
         form_footer(),
 
@@ -1604,6 +1604,8 @@ def serve_layout():
     ])
 
 app.layout = serve_layout
+
+server = app.server
 
 # CALLBACK
 # TAB: ventana inicial
@@ -1622,7 +1624,7 @@ def crea_contenido_inicio(tab, datos, param):
             return html.Div(form_ingreso(usuario))
         else:
             return html.Div([contenido_edicion(param['tab_edit'])])
-        
+
 
 # BOTON: ingreso como usuario / acceso a edición
 @app.callback(
@@ -1820,17 +1822,17 @@ def agrega_feria(click, click2, param, fecha_str, rbd, direc, comuna, hr_ini, hr
         raise PreventUpdate
     else:
         disparador = dash.ctx.triggered_id
-    
+
         if disparador == 'cerrar-fecha-no-disponible':
             return False, dash.no_update, dash.no_update, *[dash.no_update]*16
-    
+
         elif disparador == 'ag-visita':
-            fecha = datetime.strptime(fecha_str, '%Y-%m-%d').date()       
+            fecha = datetime.strptime(fecha_str, '%Y-%m-%d').date()
             if chk_bloqueado(fecha, verifica_bloqueados):
                 return True, dash.no_update, dash.no_update, *[dash.no_update]*16
             else:
                 dic_datos = {}
-        
+
                 dic_datos['organizador_id'] = param['user']
                 dic_datos['organizador'] = universidades[param['user']]
                 dic_datos['fecha'] = fecha
@@ -1850,9 +1852,9 @@ def agrega_feria(click, click2, param, fecha_str, rbd, direc, comuna, hr_ini, hr
                 dic_datos['orientador_mail'] = ori_mail
                 dic_datos['estatus'] = est
                 dic_datos['observaciones'] = obs
-            
+
                 nuevos_datos = nueva_programada(dic_datos)
-            
+
                 return False, nuevos_datos, form_agrega(), *[None]*15, ''
 
 # ====================================================================
@@ -1987,7 +1989,7 @@ def modifica_colegio_programado(click, datos, filas, param):
 
 # vuelve de página de modificaciones sin cambio
 @app.callback(
-    Output('contenido-edicion', 'children'), 
+    Output('contenido-edicion', 'children'),
     Input('btn-mod-volver', 'n_clicks'),
     State('datos-programadas', 'data'),
     State('parametros', 'data'),
@@ -2045,23 +2047,23 @@ def aplica_cambios(click, click2, datos, param, direc, comuna, fecha_str, hr_ini
         raise PreventUpdate
     else:
         disparador = dash.ctx.triggered_id
-    
+
         if disparador == 'cerrar-fecha-no-disponible2':
             return False, dash.no_update, dash.no_update, dash.no_update
-    
+
         elif disparador == 'btn-mod-aplica':
-            nueva_fecha = datetime.strptime(fecha_str, '%Y-%m-%d').date()       
+            nueva_fecha = datetime.strptime(fecha_str, '%Y-%m-%d').date()
             fecha_original = datetime.strptime(param['fecha_ori'], '%Y-%m-%d').date()
             if chk_bloqueado(nueva_fecha, verifica_bloqueados, excluye=fecha_original):
                 return True, dash.no_update, dash.no_update, dash.no_update
             else:
                 id_visita = param['id_modifica']
                 dic_original = next(item for item in datos if item['prog_id'] == id_visita)
-        
+
                 cambia_fecha = False
                 if fecha_original != nueva_fecha:
                     cambia_fecha = True
-        
+
                 dic_original['fecha'] = nueva_fecha
                 dic_original['direccion'] = direc
                 dic_original['comuna_id'] = comuna
@@ -2077,10 +2079,10 @@ def aplica_cambios(click, click2, datos, param, direc, comuna, fecha_str, hr_ini
                 dic_original['orientador_mail'] = ori_mail
                 dic_original['estatus'] = est
                 dic_original['observaciones'] = obs
-        
+
                 nuevos_datos = modifica_programada(id_visita, dic_original, cambia_fecha=cambia_fecha, consume=True)
                 param['id_modifica'] = None
-            
+
                 return False, nuevos_datos, form_modifica(nuevos_datos, param['user']), param
 
 # ====================================================================
@@ -2180,7 +2182,7 @@ def evalua_fecha_bloqueada_2(fecha_str, param):
 # rescata fecha de visita a modificar
 @app.callback(
     Output('parametros', 'data'),
-    Input('ferias-prg-usr', 'selectedRows'),    
+    Input('ferias-prg-usr', 'selectedRows'),
     State('parametros', 'data'),
     prevent_initial_call=True,
 )
